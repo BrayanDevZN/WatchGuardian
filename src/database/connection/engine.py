@@ -36,11 +36,12 @@ class Engine:
 
                 logger.info("Testando conexão do banco de dados...")
 
-                async with self.engine.begin() as session:
+                async with self.eng.begin() as session:
 
-                    session.execute(text("SELECT 1"))
+                    await session.execute(text("SELECT 1"))
 
                 logger.success("Conexão testada com sucesso!!")
+                break
 
             except Exception as error:
 
@@ -53,7 +54,7 @@ class Engine:
                 logger.error(f"Houve um erro na conexão: {error}")
 
     #executa os metodos
-    async def run(self) -> AsyncEngine:
+    async def get_engine(self) -> AsyncEngine:
 
         self._create()
         await self._test()

@@ -9,16 +9,21 @@ from src.database.control.logs import LogsDb
 
 class ControlDb(Migrate):
 
-    def __init__(self, url:str)-> None:
-
-        
+    def __init__(self, url: str) -> None:
 
         self.connect = ConnectionDb(url=url)
 
-        self.logs = LogsDb(session=self.connect.session)
-        self.observability = ObservabilityDb(session=self.connect.session)
+        self.logs = None
+        self.observability = None
 
-        super().__init__(self.connect.engine)
+    async def run(self) -> None:
 
-    
-        
+        await self.connect.run()
+
+        self.logs = LogsDb(
+            session=self.connect.session
+        )
+
+        self.observability = ObservabilityDb(
+            session=self.connect.session
+        )

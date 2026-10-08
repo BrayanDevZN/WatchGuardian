@@ -66,7 +66,7 @@ class Migrate:
                     """
                 )
 
-                session.execute(query)
+                await session.execute(query)
 
             logger.success("Feito!!")
 

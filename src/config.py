@@ -17,10 +17,9 @@ def config_url(url:str|None=None, path:str|None=None) -> str:
 
      if not os.path.exists(path):
 
-            logger.error(f"{path} não existe")
-            raise 
+            raise FileNotFoundError(f"{path} não existe")
 
-     return f"sqlite+aiosqlite:///{path}watch.db"
+     return f"sqlite+aiosqlite:///{path if "/" == path[-1] else path + "/"}watch.db"
 
         
 
