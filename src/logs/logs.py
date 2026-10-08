@@ -36,13 +36,13 @@ class Logs(Colors):
 
     # Pega a data atual
     @staticmethod
-    def _get_time() -> str:
-        return str(datetime.datetime.now(datetime.timezone.utc))
+    def _get_time() -> datetime.datetime:
+        return datetime.datetime.now(datetime.timezone.utc)
 
     # Formata o texto
     @staticmethod
-    def _format(text: str, level: str, time: str) -> str:
-        return f"{level} | {__name__} | {time} | {text}"
+    def _format(text: str, level: str, time: datetime.datetime) -> str:
+        return f"{level} | {__name__} | {str(time)} | {text}"
 
     def success(self, text: str) -> dict | None:
 
