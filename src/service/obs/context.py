@@ -30,7 +30,7 @@ class ObsContext(ObsControl):
             ) if exc_type is not None else "executed"
         )
 
-        await self.commit(content=content if exc_type is None else tb, error=True if exc_type is not None else False)
+        await self.commit(content=content, error=True if exc_type is not None else False)
 
         return False
 

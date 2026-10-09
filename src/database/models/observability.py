@@ -13,6 +13,8 @@ class ModelObservability(Base):
     id: Mapped[int]=mapped_column(Integer, primary_key=True, index=True)
     public_id: Mapped[uuid.UUID] = mapped_column(UUID, unique=True, index=True, default=uuid.uuid4)
     status: Mapped[Literal["sucess", "pending", "failure"]] = mapped_column(String, nullable=False)
+    task: Mapped[str] = mapped_column(String, nullable=False, index=True)
     content: Mapped[str] = mapped_column(String, nullable=False)
+    latency: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     update_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

@@ -27,16 +27,21 @@ class ObservabilityDb:
         return {
             "id": data.id,
             "public_id": str(data.public_id),
+            "task": data.task,
             "status": data.status,
             "content": data.content,
+            "latency": data.latency,
             "created_at": data.created_at,
             "update_at": data.update_at,
         }
 
     async def create(
         self,
+        task: str,
         status: str,
         content: str,
+        latency: int,
+        public_id: uuid.UUID | None = None,
     ) -> dict:
 
         try:
@@ -44,8 +49,11 @@ class ObservabilityDb:
             async with self.session.begin() as session:
 
                 data = ModelObservability(
+                    task=task,
                     status=status,
                     content=content,
+                    latency=latency,
+                    public_id=public_id if public_id is not None else uuid.uuid4(),
                 )
 
                 session.add(data)
@@ -83,17 +91,13 @@ class ObservabilityDb:
                 elif public_id is not None:
 
                     if isinstance(public_id, str):
-                        public_id = uuid.UUID(
-                            public_id
-                        )
+                        public_id = uuid.UUID(public_id)
 
                     query = query.where(
                         ModelObservability.public_id == public_id
                     )
 
-                result = await session.execute(
-                    query
-                )
+                result = await session.execute(query)
 
                 if id is None and public_id is None:
 
@@ -123,8 +127,10 @@ class ObservabilityDb:
         self,
         id: int | None = None,
         public_id: uuid.UUID | str | None = None,
+        task: str | None = None,
         status: str | None = None,
         content: str | None = None,
+        latency: int | None = None,
     ) -> dict | None:
 
         if id is None and public_id is None:
@@ -134,15 +140,21 @@ class ObservabilityDb:
 
         values = {}
 
+        if task is not None:
+            values["task"] = task
+
         if status is not None:
             values["status"] = status
 
         if content is not None:
             values["content"] = content
 
+        if latency is not None:
+            values["latency"] = latency
+
         if not values:
             raise ValueError(
-                "Informe status ou content para atualizar."
+                "Informe task, status, content ou latency para atualizar."
             )
 
         try:
@@ -163,17 +175,13 @@ class ObservabilityDb:
                 else:
 
                     if isinstance(public_id, str):
-                        public_id = uuid.UUID(
-                            public_id
-                        )
+                        public_id = uuid.UUID(public_id)
 
                     query = query.where(
                         ModelObservability.public_id == public_id
                     )
 
-                result = await session.execute(
-                    query
-                )
+                result = await session.execute(query)
 
                 data = result.scalar_one_or_none()
 
@@ -218,17 +226,13 @@ class ObservabilityDb:
                 else:
 
                     if isinstance(public_id, str):
-                        public_id = uuid.UUID(
-                            public_id
-                        )
+                        public_id = uuid.UUID(public_id)
 
                     query = query.where(
                         ModelObservability.public_id == public_id
                     )
 
-                result = await session.execute(
-                    query
-                )
+                result = await session.execute(query)
 
                 data = result.scalar_one_or_none()
 
