@@ -4,12 +4,19 @@ Teste de db.
 
 import asyncio
 
-from src.service.db import Control_db
+from src.database.manage import ControlDb
+from src.core.module import config_url
 
 
 async def test_db() -> None:
 
-    control_db = await Control_db()
+    url = config_url()
+
+    control_db = ControlDb(
+        url=url
+    )
+
+    await control_db.run()
 
     print("\n=== CREATE TABLES ===")
     await control_db.create_tables()
@@ -21,7 +28,8 @@ async def test_db() -> None:
     print("\n=== CREATE LOG ===")
 
     log_created = await control_db.logs.create(
-        log="Teste de criação de log"
+        log="Teste de criação de log",
+        status="INFO"
     )
 
     print(log_created)
@@ -55,7 +63,8 @@ async def test_db() -> None:
 
     result = await control_db.logs.update(
         id=log_id,
-        log="Log atualizado com sucesso"
+        log="Log atualizado com sucesso",
+        status="SUCCESS"
     )
 
     print(result)
@@ -167,7 +176,8 @@ async def test_db() -> None:
     print("\n=== CREATE DATA FOR RESET TEST ===")
 
     await control_db.logs.create(
-        log="Esse log será apagado pelo reset"
+        log="Esse log será apagado pelo reset",
+        status="WARNING"
     )
 
     await control_db.observability.create(
@@ -176,11 +186,13 @@ async def test_db() -> None:
     )
 
     print("\nLogs antes do reset:")
+
     print(
         await control_db.logs.select()
     )
 
     print("\nObservability antes do reset:")
+
     print(
         await control_db.observability.select()
     )
@@ -190,11 +202,13 @@ async def test_db() -> None:
     await control_db.reset_tables()
 
     print("\nLogs depois do reset:")
+
     print(
         await control_db.logs.select()
     )
 
     print("\nObservability depois do reset:")
+
     print(
         await control_db.observability.select()
     )

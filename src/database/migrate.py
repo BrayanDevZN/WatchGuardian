@@ -59,14 +59,18 @@ class Migrate:
 
             async with self.engine.begin() as session:
 
-                query = text(
-                    """
-                    delete from logs;
-                    delete from observability
-                    """
-                )
+                querys = [
+                    "delete from logs",
+                    "delete from observability"
+                ]
 
-                await session.execute(query)
+                for query in querys:
+
+                    sql = text(query)
+
+               
+
+                    await session.execute(sql)
 
             logger.success("Feito!!")
 

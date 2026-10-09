@@ -7,13 +7,14 @@ from src.database.base import Base
 import uuid 
 from sqlalchemy import UUID, DateTime, String, Integer
 from datetime import datetime
-
+from typing import Literal
 class ModelLogs(Base):
 
     __tablename__="logs"
     id: Mapped[int]=mapped_column(Integer, primary_key=True, index=True)
     public_id: Mapped[uuid.UUID] = mapped_column(UUID, unique=True, index=True, default=uuid.uuid4)
     log: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[Literal[ "SUCCESS","INFO","WARNING","ERROR","DEBUG","CRITICAL"]] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     

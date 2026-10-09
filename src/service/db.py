@@ -1,21 +1,29 @@
 """
-Junta os modulos de db com config
+Junta os modulos de db com settings e config
 """
 from src.core.module import config_url, Settings
 from src.database.manage import ControlDb
 
 
 class WatchDb(ControlDb):
-    def __init__(self, url:str=None, path:str|None=None)-> None:
+    def __init__(self, settings:Settings)-> None:
+
+      
+        url = settings.get_secret(secret_name="url")
+        path = settings.get_config(name="path")
 
         url = config_url(url=url, path=path)
         super().__init__(url)
+
+    async def _initializate(self) -> WatchDb:
+
+        await self.run()
+        return self 
+
+    def __await__(self):
+        return self._initializate().__await__()
+
+        
+   
         
 
-async def Control_db(url:str|None=None, path:str|None=None) -> ControlDb:
-
-    url = config_url(url=url, path=path)
-
-    instance = ControlDb(url=url)
-    await instance.run()
-    return instance
