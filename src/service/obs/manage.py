@@ -2,12 +2,12 @@
 junta os modulos
 """
 
-from .context import ControlDb, WatchLogs, ObsContext, ObsControl
+from .context import WatchDb, WatchLogs, ObsContext, ObsControl
 
 
 class WatchObs(ObsControl):
-    def __init__(self, logs:WatchLogs, control_db:ControlDb)-> None:
-        super().__init__(logs, control_db)
+    def __init__(self, logs:WatchLogs, watch_db=WatchDb)-> None:
+        super().__init__(logs, watch_db)
         
 
 
@@ -16,7 +16,7 @@ class WatchObs(ObsControl):
 
         return ObsContext(
             name=name,
-            control_db=self.control_db,
+            watch_db=self.control_db,
             logs=self.logs
         )
 

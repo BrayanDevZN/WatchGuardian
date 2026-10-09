@@ -2,13 +2,13 @@
 Classe que gerencia o contexto
 """
 
-from .watch import ObsControl, ControlDb, WatchLogs
+from .watch import ObsControl, WatchDb, WatchLogs
 import traceback
 class ObsContext(ObsControl):
 
-    def __init__(self, logs:WatchLogs, control_db:ControlDb, name:str):
+    def __init__(self, logs:WatchLogs, watch_db:WatchDb, name:str):
 
-        super().__init__(logs, control_db)
+        super().__init__(logs, watch_db)
         self.name = name
 
 
