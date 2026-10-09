@@ -8,7 +8,7 @@ Cria orquestrador de sessoes
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
 
 
-def create_session(engine:AsyncEngine):
+def create_session(engine:AsyncEngine)->AsyncSession:
 
     try:
 

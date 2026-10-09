@@ -13,12 +13,13 @@ class ControlDb(Migrate):
 
         self.connect = ConnectionDb(url=url)
 
-        self.logs = None
-        self.observability = None
+       
 
     async def run(self) -> None:
 
         await self.connect.run()
+
+        super().__init__(engine=self.connect.engine)
 
         self.logs = LogsDb(
             session=self.connect.session
