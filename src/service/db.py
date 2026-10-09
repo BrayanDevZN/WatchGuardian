@@ -1,8 +1,16 @@
 """
 Junta os modulos de db com config
 """
-from src.config import config_url
+from src.core.module import config_url, Settings
 from src.database.manage import ControlDb
+
+
+class WatchDb(ControlDb):
+    def __init__(self, url:str=None, path:str|None=None)-> None:
+
+        url = config_url(url=url, path=path)
+        super().__init__(url)
+        
 
 async def Control_db(url:str|None=None, path:str|None=None) -> ControlDb:
 

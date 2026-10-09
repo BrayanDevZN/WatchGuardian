@@ -1,4 +1,4 @@
-from .logs.module import Logs
+from ..logs.module import Logs
 logger =Logs(loglevel="SUCCESS")
 import os
 """
