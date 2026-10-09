@@ -6,7 +6,7 @@ from .context import WatchDb, WatchLogs, ObsContext, ObsControl
 
 
 class WatchObs(ObsControl):
-    def __init__(self, logs:WatchLogs, watch_db=WatchDb)-> None:
+    def __init__(self, logs:WatchLogs, watch_db:WatchDb)-> None:
         super().__init__(logs, watch_db)
         
 
