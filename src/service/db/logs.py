@@ -6,8 +6,8 @@ import json
 import uuid
 from typing import Any
 
-from src.cache.manage import RedisManage as CacheManage
 from src.database.manage import ControlDb
+from src.service.cache import CacheManage
 
 
 class LogsService:
