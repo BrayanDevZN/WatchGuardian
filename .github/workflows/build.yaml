@@ -38,6 +38,7 @@ jobs:
                 |
                 python -m tests.unit.database
                 python -m tests.unit.logs
+                python -m tests.unit.cache
 
             - name: integration
               run:

@@ -1,6 +1,6 @@
 from src.logs.module import Logs
 logger = Logs(loglevel="SUCCESS")
-
+import time
 "Cria conexão com redis"
 
 from redis import Redis 
@@ -52,8 +52,9 @@ class RedisConnect:
 
                 if countdown !=3:
 
-                    logger.warning("Houve um erro na conexão, executando um novo teste...")
+                    logger.warning("Houve um erro na conexão, executando um novo teste em 5 segundos...")
                     countdown+=1
+                    time.sleep(5)
                     continue 
 
                 logger.error(f"Houve um erro ao se conectar: {error}")
