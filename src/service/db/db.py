@@ -9,7 +9,7 @@ class WatchDb(ControlDb):
     def __init__(self, settings:Settings)-> None:
 
       
-        url = settings.get_secret(secret_name="url")
+        url = settings.get_secret(secret_name="url_db")
         path = settings.get_config(name="path")
 
         url = config_url(url=url, path=path)
