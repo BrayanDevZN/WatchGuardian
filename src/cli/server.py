@@ -5,6 +5,8 @@ import argparse
 from src.logs.module import Logs
 from src.service.module import ClientHttp, Cmd, Settings
 
+from .migrate import run_migrate
+
 
 logger = Logs(loglevel="SUCCESS")
 
@@ -87,6 +89,13 @@ async def run_server(args) -> None:
     settings = _settings(args.env_file)
 
     if args.command == "run":
+        migrate_args = argparse.Namespace(
+            env_file=args.env_file,
+            command="make_tables",
+        )
+
+        await run_migrate(migrate_args)
+
         command = (
             f"uvicorn {args.app} "
             f"--host {args.host} "
