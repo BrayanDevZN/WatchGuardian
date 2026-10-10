@@ -44,11 +44,14 @@ class Settings:
     
     def required_secrets(self, secret:str) -> Any:
 
-                
-                if not secret in self.secrets.keys() or self.secrets[secret] == "":
-                    raise SettingsNotFoundEnv(f"Not found env {secret}")
+        if (
+            secret not in self.secrets.keys()
+            or self.secrets[secret] is None
+            or self.secrets[secret] == ""
+        ):
+            raise SettingsNotFoundEnv(f"Not found env {secret}")
 
-                return self.secrets[secret]
+        return self.secrets[secret]
 
 
 
@@ -101,24 +104,3 @@ class Settings:
             raise SettingsNotFoundConfig(f"Not found config {name}")
 
         return self.configs[name]
-
-
-
-
-
-
-            
-
-
-
-
-
-    
-
-
-
-    
-
-
-
-    
