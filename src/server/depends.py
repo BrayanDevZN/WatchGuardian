@@ -1,7 +1,7 @@
 "Le o token e valida ele"
 
 from fastapi import HTTPException, Depends, Request
-from src.service.module import Settings, WatchAuth, logger
+from src.service.token import WatchAuth, logger
 from jwt.exceptions import InvalidSignatureError
 from datetime import datetime, timezone, timedelta
 async def depends_user(request:Request):
@@ -53,9 +53,3 @@ async def depends_user(request:Request):
             detail=error,
             status_code=501
         )
-
-
-
-        
-
-    
