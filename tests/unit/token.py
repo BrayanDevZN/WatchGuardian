@@ -32,10 +32,16 @@ async def test_token() -> None:
         settings=settings
     )
 
+    payload = {
+        "user_id": "test-user"
+    }
+
     print("\n=== USER TOKEN ===")
 
     before = datetime.now(timezone.utc).timestamp()
-    token = await watch_auth.user_token()
+    token = await watch_auth.user_token(
+        payload=payload
+    )
     after = datetime.now(timezone.utc).timestamp()
 
     print(token)
@@ -49,12 +55,15 @@ async def test_token() -> None:
     print(decoded)
 
     assert decoded["type"] == "user_token"
+    assert decoded["user_id"] == "test-user"
     assert before + 3600 <= decoded["exp"] <= after + 3600
-    assert set(decoded.keys()) == {"exp", "type"}
+    assert set(decoded.keys()) == {"user_id", "exp", "type"}
 
     print("\n=== REFRESH TOKEN ===")
 
-    refresh_token = await watch_auth.refresh_token()
+    refresh_token = await watch_auth.refresh_token(
+        payload=payload
+    )
 
     print(refresh_token)
 
@@ -67,6 +76,7 @@ async def test_token() -> None:
     print(decoded_refresh)
 
     assert decoded_refresh == {
+        "user_id": "test-user",
         "type": "refresh_token"
     }
 
