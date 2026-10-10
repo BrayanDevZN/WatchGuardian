@@ -1,5 +1,7 @@
 "Inicia a api"
-from src.service.module import logger, Settings, CacheManage
+from src.auth.token import logger
+from src.core.module import Settings
+from src.service.cache import CacheManage
 from .midlleware import Midlleware
 from .handles.logs import logs_router
 from .handles.obs import obs_router
