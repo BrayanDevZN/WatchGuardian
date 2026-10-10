@@ -5,9 +5,19 @@
 
 ### Observe. Control. Integrate. Evolve.
 
-Framework Python modular para observabilidade, logging, banco de dados, cache, autenticação, servidor HTTP e integração entre aplicações.
+**Framework Python modular de observabilidade e infraestrutura para aplicações backend.**
 
+O WatchGuardian reúne logging, observabilidade, banco de dados, cache, autenticação, cliente HTTP, CLI e um **servidor próprio de observabilidade** em uma API pública simples e reutilizável.
+
+[![PyPI](https://img.shields.io/pypi/v/watchguardian?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/watchguardian/)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![CI](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml)
+[![Functional](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/server.yaml/badge.svg?branch=main)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/server.yaml)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/BrayanDevZN/WatchGuardian/actions)
+[![Unit Tests](https://img.shields.io/badge/tests-unit-2EA44F?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml)
+[![Integration Tests](https://img.shields.io/badge/tests-integration-6F42C1?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml)
+[![Functional Tests](https://img.shields.io/badge/tests-functional-D97706?style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/server.yaml)
+
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Uvicorn](https://img.shields.io/badge/Uvicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)](https://www.uvicorn.org/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
@@ -17,22 +27,26 @@ Framework Python modular para observabilidade, logging, banco de dados, cache, a
 [![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry&logoColor=white)](https://opentelemetry.io/)
-[![Requests](https://img.shields.io/badge/Requests-20232A?style=for-the-badge&logo=python&logoColor=white)](https://requests.readthedocs.io/)
-[![python-dotenv](https://img.shields.io/badge/python--dotenv-ECD53F?style=for-the-badge&logo=dotenv&logoColor=111111)](https://pypi.org/project/python-dotenv/)
-[![asyncpg](https://img.shields.io/badge/asyncpg-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://pypi.org/project/asyncpg/)
-[![aiosqlite](https://img.shields.io/badge/aiosqlite-0F80CC?style=for-the-badge&logo=sqlite&logoColor=white)](https://pypi.org/project/aiosqlite/)
 
 </div>
 
 ---
 
-## Visão geral
+## Instalação pública
 
-O **WatchGuardian** foi criado para concentrar recursos comuns de backend em uma única base reutilizável. Em vez de repetir configuração de logs, observabilidade, cache, autenticação, banco e servidor em cada projeto, o framework fornece módulos prontos e uma API pública simples.
+O WatchGuardian está disponível publicamente no PyPI.
 
-Além de funcionar como biblioteca embutida na aplicação, o WatchGuardian também pode **montar um servidor próprio dedicado à observabilidade**. Esse servidor expõe rotas para logs, observabilidade e autenticação, permitindo que múltiplas aplicações enviem, consultem e centralizem dados operacionais em uma única instância WatchGuardian.
+```bash
+pip install watchguardian
+```
 
-A interface pública fica em `WatchGuardian/`, enquanto a implementação interna permanece organizada em `src/`.
+Para atualizar para a versão mais recente:
+
+```bash
+pip install --upgrade watchguardian
+```
+
+Depois da instalação, os imports públicos são:
 
 ```python
 from WatchGuardian import Settings, WatchLogs, WatchObs, WatchAuth
@@ -40,27 +54,45 @@ from WatchGuardian.database import WatchDb, CacheManage
 from WatchGuardian.server import ClientHttp, WatchServer
 ```
 
+E a CLI fica disponível diretamente no terminal:
+
+```bash
+watchguardian --help
+```
+
+---
+
+## O que é o WatchGuardian?
+
+O **WatchGuardian é um framework**, não apenas uma coleção de helpers.
+
+Ele fornece uma camada integrada para aplicações Python que precisam de observabilidade, persistência, autenticação, cache e comunicação entre serviços sem reconstruir a mesma infraestrutura em cada projeto.
+
+O framework pode ser usado de duas formas:
+
+1. **Embutido na própria aplicação**, usando módulos como `WatchLogs`, `WatchObs`, `WatchDb`, `CacheManage` e `WatchAuth`.
+2. **Como servidor central de observabilidade**, usando `WatchServer` para subir uma API própria e `ClientHttp` para outras aplicações se conectarem a ela.
+
 ### Principais recursos
 
-- logging com níveis `DEBUG`, `INFO`, `SUCCESS`, `WARNING`, `ERROR` e `CRITICAL`;
-- persistência opcional dos logs em banco;
-- observabilidade de tarefas com contexto assíncrono;
-- PostgreSQL assíncrono e fallback SQLite;
-- Redis para cache, contadores, hashes e Pub/Sub;
-- autenticação JWT com `user_token` e `refresh_token`;
-- **servidor próprio de observabilidade** baseado em FastAPI;
-- servidor FastAPI pronto com CORS, rate limit e rotas internas;
-- cliente HTTP para outras aplicações enviarem e consultarem dados na instância WatchGuardian;
-- CLI própria com o comando `watchguardian`;
-- arquitetura modular, separando API pública e implementação interna.
+- logging com `DEBUG`, `INFO`, `SUCCESS`, `WARNING`, `ERROR` e `CRITICAL`;
+- persistência opcional de logs em background;
+- observabilidade assíncrona de tarefas, latência, status e erros;
+- servidor próprio de observabilidade baseado em FastAPI;
+- PostgreSQL assíncrono e SQLite como fallback;
+- Redis para cache, TTL, contadores, hashes e Pub/Sub;
+- JWT com `user_token` e `refresh_token`;
+- cliente HTTP para comunicação com instâncias WatchGuardian;
+- CLI própria com `watchguardian`;
+- testes unitários, de integração e funcionais;
+- CI automatizado com GitHub Actions;
+- distribuição pública via PyPI.
 
 ---
 
 ## Servidor próprio de observabilidade
 
-O WatchGuardian pode ser usado como uma camada central de observabilidade da sua infraestrutura.
-
-Em vez de cada aplicação armazenar e consultar seus próprios logs isoladamente, você pode subir uma instância WatchGuardian como serviço separado e fazer seus projetos conversarem com ela via HTTP.
+Um dos pontos centrais do framework é a possibilidade de montar uma instância WatchGuardian dedicada à observabilidade.
 
 ```text
 Aplicação A ─┐
@@ -68,18 +100,18 @@ Aplicação B ─┼──> WatchGuardian Server ───> Logs / Observabilida
 Aplicação C ─┘
 ```
 
-Isso permite centralizar:
+Essa instância centraliza:
 
 - logs de múltiplos serviços;
-- status de tarefas;
-- latência e falhas;
-- eventos de observabilidade;
+- tarefas e status de execução;
+- latência;
+- falhas e erros;
 - autenticação das requisições;
-- consulta remota via `ClientHttp`;
-- persistência em PostgreSQL ou SQLite;
-- cache e rate limit com Redis.
+- persistência de dados;
+- consultas remotas via `ClientHttp`;
+- rate limit e cache com Redis.
 
-O objetivo é permitir que o WatchGuardian seja tanto uma biblioteca interna quanto um **serviço de observabilidade independente**.
+Assim, o WatchGuardian pode funcionar tanto como framework dentro de um projeto quanto como um serviço separado de observabilidade para vários sistemas.
 
 ---
 
@@ -87,11 +119,11 @@ O objetivo é permitir que o WatchGuardian seja tanto uma biblioteca interna qua
 
 ```mermaid
 flowchart TD
-    A[Seu projeto] --> B[WatchGuardian API pública]
+    A[Aplicação] --> B[WatchGuardian API pública]
 
-    B --> C[WatchGuardian/__init__.py]
-    B --> D[WatchGuardian/database.py]
-    B --> E[WatchGuardian/server.py]
+    B --> C[Core]
+    B --> D[Database]
+    B --> E[Server]
 
     C --> F[Settings]
     C --> G[WatchLogs]
@@ -104,95 +136,23 @@ flowchart TD
     E --> L[ClientHttp]
     E --> M[WatchServer]
 
-    M --> V[Servidor próprio de observabilidade]
-    L --> V
-    V --> W[Logs]
-    V --> X[Observabilidade]
-    V --> Y[Autenticação]
-
-    F --> N[src/core]
-    G --> O[src/logs + src/service]
-    H --> P[src/service/obs]
-    I --> Q[src/auth]
-    J --> R[src/database]
-    K --> S[src/cache]
-    L --> T[src/client]
-    M --> U[src/server]
+    M --> N[Servidor de observabilidade]
+    N --> O[Logs]
+    N --> P[Observabilidade]
+    N --> Q[Autenticação]
+    N --> R[Redis]
+    N --> S[Database]
 ```
 
-A ideia é simples: quem usa a biblioteca trabalha com `WatchGuardian.*`; a estrutura `src.*` fica como implementação interna. Assim a API pública pode permanecer estável mesmo que a organização interna evolua.
+A camada `WatchGuardian/` é a API pública. A implementação interna permanece em `src/`, permitindo evoluir a arquitetura sem obrigar quem usa o framework a depender da estrutura interna.
 
 ---
 
-## Instalação
-
-### Instalar diretamente do GitHub
-
-```bash
-pip install git+https://github.com/BrayanDevZN/WatchGuardian.git
-```
-
-### Instalar em modo desenvolvimento
-
-```bash
-git clone https://github.com/BrayanDevZN/WatchGuardian.git
-cd WatchGuardian
-pip install -e .
-```
-
-Depois disso a CLI fica disponível globalmente no ambiente virtual:
-
-```bash
-watchguardian --help
-```
-
-### Requisitos
-
-- Python `>= 3.12`
-- Redis para os recursos de cache e para o servidor
-- PostgreSQL opcional
-- SQLite usado como fallback quando não há URL externa de banco
-
----
-
-## API pública
-
-### Base
-
-```python
-from WatchGuardian import (
-    Settings,
-    WatchLogs,
-    WatchObs,
-    WatchAuth,
-)
-```
-
-### Banco e cache
-
-```python
-from WatchGuardian.database import (
-    WatchDb,
-    CacheManage,
-)
-```
-
-### Servidor e cliente
-
-```python
-from WatchGuardian.server import (
-    ClientHttp,
-    WatchServer,
-)
-```
-
----
-
-# Módulos
+# Uso dos módulos
 
 ## `Settings`
 
-Centraliza variáveis de ambiente e configurações da aplicação.
+Centraliza variáveis de ambiente e configurações.
 
 ```python
 from WatchGuardian import Settings
@@ -209,7 +169,7 @@ secret = settings.required_secrets("secret")
 host = settings.get_secret("host")
 ```
 
-Também é possível registrar configurações que não vêm do ambiente:
+Configurações em memória também podem ser registradas:
 
 ```python
 settings.add_config({
@@ -220,22 +180,11 @@ settings.add_config({
 mode = settings.required_config("environment")
 ```
 
-### Métodos principais
-
-| Método | Função |
-| --- | --- |
-| `add_secret()` | carrega uma ou várias variáveis de ambiente |
-| `get_secret()` | busca uma variável já registrada |
-| `required_secrets()` | busca uma variável e gera erro se estiver ausente |
-| `add_config()` | registra configuração em memória |
-| `get_config()` | retorna uma configuração opcional |
-| `required_config()` | exige uma configuração existente |
-
 ---
 
 ## `WatchLogs`
 
-Gerencia logs estruturados e pode persistir os registros no banco em background.
+Gerencia logs estruturados.
 
 ```python
 from WatchGuardian import WatchLogs
@@ -246,11 +195,11 @@ logs.debug("Entrando no fluxo")
 logs.info("Processando dados")
 logs.success("Operação concluída")
 logs.warning("Tempo de resposta alto")
-logs.error("Falha durante a operação")
+logs.error("Falha na operação")
 logs.critical("Falha crítica")
 ```
 
-Para persistir os logs no banco:
+Para persistir os logs:
 
 ```python
 from WatchGuardian import WatchLogs
@@ -262,13 +211,13 @@ logs = WatchLogs(loglevel="INFO", watch_db=watch_db)
 logs.info("Esse log também será persistido")
 ```
 
-Quando `watch_db` é fornecido, a escrita é disparada em background para evitar bloquear o fluxo principal.
+Quando `watch_db` é informado, a persistência é executada em background para não bloquear o fluxo principal.
 
 ---
 
 ## `WatchObs`
 
-Permite acompanhar tarefas, latência, status e conteúdo de execução.
+Registra execução, status, latência e falhas de tarefas.
 
 ```python
 from WatchGuardian import WatchLogs, WatchObs
@@ -282,13 +231,13 @@ async with obs.begin("process-data"):
     await process_data()
 ```
 
-Ao entrar no contexto, a tarefa é registrada. Ao sair, o WatchGuardian finaliza a observabilidade automaticamente e registra sucesso ou erro.
+Ao entrar no contexto a tarefa é registrada. Ao sair, o framework finaliza automaticamente a observabilidade, incluindo erros quando ocorrerem.
 
 ---
 
 ## `WatchAuth`
 
-Fornece geração e validação de JWTs.
+Cria e valida JWTs.
 
 ```python
 from WatchGuardian import Settings, WatchAuth
@@ -298,18 +247,13 @@ settings.add_secret("secret")
 
 auth = WatchAuth(settings=settings)
 
-user_token = await auth.user_token({
-    "user_id": "123"
-})
-
-refresh_token = await auth.refresh_token({
-    "user_id": "123"
-})
+user_token = await auth.user_token({"user_id": "123"})
+refresh_token = await auth.refresh_token({"user_id": "123"})
 
 payload = await auth.decode(user_token)
 ```
 
-### Gerar uma secret
+Gerar uma secret:
 
 ```python
 from WatchGuardian import WatchAuth
@@ -318,13 +262,11 @@ secret = WatchAuth().secret()
 print(secret)
 ```
 
-A secret gerada pelo framework combina dois UUIDs aleatórios para produzir uma chave longa para assinatura.
-
 ---
 
 ## `WatchDb`
 
-Abstrai o acesso ao banco e fornece controles para logs e observabilidade.
+Fornece acesso ao banco usado pelo framework e aos dados de logs e observabilidade.
 
 ```python
 from WatchGuardian import Settings
@@ -336,9 +278,9 @@ settings.add_secret("url_db")
 watch_db = await WatchDb(settings=settings)
 ```
 
-Se `url_db` não estiver configurada, o projeto pode trabalhar com SQLite como fallback.
+Sem `url_db`, o framework pode utilizar SQLite como fallback.
 
-### Migrações básicas
+### Tabelas
 
 ```python
 await watch_db.create_tables()
@@ -354,13 +296,13 @@ created = await watch_db.logs.create(
     status="INFO",
 )
 
-result = await watch_db.logs.select(id=created["id"])
+logs = await watch_db.logs.select()
 ```
 
 ### Observabilidade
 
 ```python
-created = await watch_db.observability.create(
+await watch_db.observability.create(
     task="etl",
     status="pending",
     content="starting",
@@ -372,7 +314,7 @@ created = await watch_db.observability.create(
 
 ## `CacheManage`
 
-Fornece operações Redis com TTL e suporte a Pub/Sub.
+Interface Redis do framework.
 
 ```python
 from WatchGuardian import Settings
@@ -384,105 +326,38 @@ settings.add_secret(["host", "port", "password"])
 cache = CacheManage(settings=settings)
 ```
 
-### Contador com TTL
+Contador com TTL:
 
 ```python
-value = await cache.incr(
-    key="rate:user:123",
-    time=60,
-)
+value = await cache.incr("rate:user:123", time=60)
 ```
 
-### Hash
+Hash:
 
 ```python
 await cache.hash(
     key="user:123",
-    data={
-        "name": "Brayan",
-        "status": "active",
-    },
+    data={"name": "Brayan", "status": "active"},
     time=3600,
 )
 
-user = await cache.read(
-    key="user:123",
-    hash=True,
-)
+user = await cache.read("user:123", hash=True)
 ```
 
-### Delete
+Pub/Sub:
 
 ```python
-await cache.delete("user:123")
-```
+await cache.publish("watchguardian:events", "task_finished")
 
-### Pub/Sub
-
-```python
-await cache.publish(
-    channel="watchguardian:events",
-    event="task_finished",
-)
-```
-
-```python
 async for event in cache.listen("watchguardian:events"):
     print(event)
 ```
 
 ---
 
-## `ClientHttp`
-
-Cliente HTTP para conversar com uma API WatchGuardian.
-
-Por padrão usa `http://localhost:8000`. Também pode ler a variável de ambiente `url`.
-
-Esse módulo é a ponte entre aplicações externas e o servidor próprio de observabilidade do WatchGuardian.
-
-```python
-from WatchGuardian import Settings
-from WatchGuardian.server import ClientHttp
-
-settings = Settings()
-client = ClientHttp(settings=settings)
-```
-
-### Buscar logs
-
-```python
-logs = await client.logs(
-    token=user_token,
-).get_log()
-```
-
-### Buscar observabilidade
-
-```python
-items = await client.obs(
-    token=user_token,
-).get_obs()
-```
-
-### Refresh de autenticação
-
-```python
-result = await client.auth(
-    user_token=user_token,
-    refresh_token=refresh_token,
-).refresh()
-```
-
----
-
 ## `WatchServer`
 
-O `WatchServer` monta o **servidor próprio de observabilidade do WatchGuardian**.
-
-Ele cria uma aplicação FastAPI pronta para receber, persistir e consultar dados operacionais, com rotas de logs, observabilidade e autenticação, além de CORS, rate limit e integração com Redis.
-
-Isso permite rodar o WatchGuardian como um serviço separado da aplicação principal e centralizar a observabilidade de múltiplos projetos.
+Monta o servidor próprio de observabilidade do framework.
 
 ```python
 from WatchGuardian import Settings
@@ -502,111 +377,160 @@ server = WatchServer(settings=settings)
 app = server.run()
 ```
 
-A variável `app` retornada é um objeto FastAPI e pode ser iniciada com Uvicorn.
+Depois execute com Uvicorn:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-Depois, outras aplicações podem acessar essa instância usando `ClientHttp`.
+O servidor inclui rotas internas de logs, observabilidade e autenticação, além de CORS, rate limit e integração com Redis.
+
+---
+
+## `ClientHttp`
+
+Conecta aplicações ao servidor WatchGuardian.
+
+```python
+from WatchGuardian import Settings
+from WatchGuardian.server import ClientHttp
+
+settings = Settings()
+client = ClientHttp(settings=settings)
+```
+
+Por padrão usa `http://localhost:8000`. Também pode usar a variável `url`.
+
+```python
+logs = await client.logs(token=user_token).get_log()
+items = await client.obs(token=user_token).get_obs()
+
+result = await client.auth(
+    user_token=user_token,
+    refresh_token=refresh_token,
+).refresh()
+```
 
 ---
 
 # CLI
 
-Depois da instalação, use diretamente:
+Após instalar pelo PyPI:
+
+```bash
+pip install watchguardian
+```
+
+A CLI fica disponível como:
 
 ```bash
 watchguardian [comando]
 ```
 
-## Ajuda
+### Ajuda
 
 ```bash
 watchguardian --help
 ```
 
-## Banco
-
-Criar tabelas:
+### Banco
 
 ```bash
 watchguardian migrate make_tables
-```
-
-Resetar tabelas:
-
-```bash
 watchguardian migrate reset
-```
-
-Dropar tabelas:
-
-```bash
 watchguardian migrate drop
 ```
 
-Usando um arquivo `.env` específico:
+Com arquivo `.env` específico:
 
 ```bash
 watchguardian migrate --env-file .env.production make_tables
 ```
 
-## Autenticação
-
-Gerar secret:
+### Autenticação
 
 ```bash
 watchguardian auth secret
-```
-
-Gerar user token:
-
-```bash
 watchguardian auth token --type user_token --payload '{"user_id":"123"}'
-```
-
-Gerar refresh token:
-
-```bash
 watchguardian auth token --type refresh_token --payload '{"user_id":"123"}'
 ```
 
-## Servidor
+### Servidor
 
 ```bash
 watchguardian server run main:app
 ```
 
-Com host e porta personalizados:
-
 ```bash
 watchguardian server run main:app --host 0.0.0.0 --port 8080
 ```
-
-Em detached:
 
 ```bash
 watchguardian server run main:app --detached
 ```
 
-## Consultar logs
+### Consultar dados do servidor
 
 ```bash
 watchguardian server logs --token SEU_TOKEN
-```
-
-## Consultar observabilidade
-
-```bash
 watchguardian server obs --token SEU_TOKEN
 ```
 
 ---
 
-## Variáveis de ambiente
+## Exemplo rápido da versão pública
 
-Dependendo dos módulos utilizados, o WatchGuardian pode ler as seguintes variáveis:
+Depois de instalar:
+
+```bash
+pip install watchguardian
+```
+
+Crie um arquivo `main.py`:
+
+```python
+import asyncio
+import os
+
+from WatchGuardian import Settings, WatchLogs, WatchObs, WatchAuth
+from WatchGuardian.database import WatchDb
+
+
+async def main() -> None:
+    os.environ["secret"] = WatchAuth().secret()
+
+    settings = Settings()
+    settings.add_secret("secret")
+
+    db = await WatchDb(settings=settings)
+    await db.create_tables()
+
+    logs = WatchLogs(loglevel="INFO", watch_db=db)
+    obs = WatchObs(logs=logs, watch_db=db)
+    auth = WatchAuth(settings=settings)
+
+    token = await auth.user_token({"user_id": "123"})
+
+    logs.success("WatchGuardian iniciado")
+
+    async with obs.begin("example-task"):
+        await asyncio.sleep(0.2)
+
+    print(token)
+
+
+asyncio.run(main())
+```
+
+Execute:
+
+```bash
+python main.py
+```
+
+---
+
+## Variáveis de ambiente
 
 ```env
 # JWT
@@ -628,48 +552,29 @@ rate_limit=100
 url=http://localhost:8000
 ```
 
-Nem todas são obrigatórias em todos os cenários. Cada módulo valida apenas as configurações que precisa para funcionar.
+Cada módulo utiliza apenas as configurações necessárias para sua função.
 
 ---
 
-## Exemplo completo
+## Testes e CI/CD
 
-```python
-import asyncio
+O projeto possui três níveis de testes:
 
-from WatchGuardian import Settings, WatchLogs, WatchObs, WatchAuth
-from WatchGuardian.database import WatchDb
+### Unitários
 
+Validam componentes isolados como banco, logs, cache, token e comandos internos.
 
-async def main() -> None:
-    settings = Settings(env_file=".env")
-    settings.add_secret([
-        "secret",
-        "url_db",
-        "host",
-        "port",
-        "password",
-    ])
+### Integração
 
-    db = await WatchDb(settings=settings)
-    logs = WatchLogs(loglevel="INFO", watch_db=db)
-    obs = WatchObs(logs=logs, watch_db=db)
-    auth = WatchAuth(settings=settings)
+Validam a comunicação entre módulos, incluindo integração entre banco, logging e observabilidade.
 
-    token = await auth.user_token({
-        "user_id": "123"
-    })
+### Funcionais
 
-    logs.success("WatchGuardian iniciado")
+Sobem o servidor WatchGuardian e exercitam o fluxo completo via cliente HTTP e CLI.
 
-    async with obs.begin("example-task"):
-        await asyncio.sleep(0.1)
+Os testes são executados no GitHub Actions. O workflow `build.yaml` executa testes unitários e de integração com Redis como serviço, enquanto `server.yaml` executa os testes funcionais do servidor.
 
-    print(token)
-
-
-asyncio.run(main())
-```
+O projeto também está preparado para fluxo de CI/CD com GitHub Actions e publicação de releases no PyPI. Atualmente a validação contínua é automatizada e a distribuição pública é feita pelo pacote `watchguardian`.
 
 ---
 
@@ -677,10 +582,10 @@ asyncio.run(main())
 
 ```text
 WatchGuardian/
-├── WatchGuardian/          # API pública da biblioteca
-│   ├── __init__.py         # Settings, WatchLogs, WatchObs, WatchAuth
-│   ├── database.py         # WatchDb, CacheManage
-│   └── server.py           # ClientHttp, WatchServer
+├── WatchGuardian/          # API pública do framework
+│   ├── __init__.py
+│   ├── database.py
+│   └── server.py
 │
 ├── src/                    # implementação interna
 │   ├── auth/
@@ -695,51 +600,19 @@ WatchGuardian/
 │   └── util/
 │
 ├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── functional/
+│
+├── .github/workflows/
 ├── assets/
-│   └── watchguardian-logo.svg
 ├── pyproject.toml
 └── README.md
 ```
 
 ---
 
-## Filosofia do projeto
-
-O WatchGuardian segue quatro ideias principais:
-
-**Observe**: tenha visibilidade sobre logs, tarefas, erros e latência.
-
-**Control**: centralize configuração, banco, cache e autenticação.
-
-**Integrate**: permita que aplicações diferentes conversem por HTTP e eventos.
-
-**Evolve**: mantenha uma API pública simples enquanto a implementação interna continua evoluindo.
-
----
-
-## Status
-
-O WatchGuardian está em desenvolvimento ativo e atualmente está na versão `0.1.0`.
-
-Áreas já presentes no projeto:
-
-- [x] Settings
-- [x] Logging
-- [x] Observabilidade
-- [x] JWT
-- [x] Banco assíncrono
-- [x] Redis
-- [x] HTTP Client
-- [x] FastAPI Server
-- [x] Servidor próprio de observabilidade
-- [x] CLI
-- [x] Pacote instalável via `pyproject.toml`
-
----
-
-## Desenvolvimento
-
-Clone o projeto e instale em modo editável:
+## Desenvolvimento local
 
 ```bash
 git clone https://github.com/BrayanDevZN/WatchGuardian.git
@@ -749,20 +622,34 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Para gerar os artefatos do pacote:
+Gerar o pacote:
 
 ```bash
 python -m pip install build
 python -m build
 ```
 
-O resultado será criado em `dist/`.
-
 ---
 
-## Repositório
+## Status
 
-GitHub: [BrayanDevZN/WatchGuardian](https://github.com/BrayanDevZN/WatchGuardian)
+Versão pública atual: **0.1.0**.
+
+- [x] Framework instalável via PyPI
+- [x] API pública em `WatchGuardian`
+- [x] Settings
+- [x] Logging
+- [x] Observabilidade
+- [x] JWT
+- [x] Banco assíncrono
+- [x] Redis
+- [x] HTTP Client
+- [x] Servidor próprio de observabilidade
+- [x] CLI `watchguardian`
+- [x] Testes unitários
+- [x] Testes de integração
+- [x] Testes funcionais
+- [x] CI com GitHub Actions
 
 ---
 
@@ -772,6 +659,6 @@ GitHub: [BrayanDevZN/WatchGuardian](https://github.com/BrayanDevZN/WatchGuardian
 
 **Observability for real projects.**
 
-Feito para transformar infraestrutura repetitiva em módulos reutilizáveis e centralizar a observabilidade em um servidor próprio quando necessário.
+Um framework Python para observar, controlar e conectar infraestrutura backend sem repetir o mesmo trabalho em cada aplicação.
 
 </div>
