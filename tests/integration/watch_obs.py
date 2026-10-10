@@ -17,7 +17,7 @@ async def test_watch_obs() -> None:
 
     settings = Settings()
 
-    settings.add_secret("url")
+    settings.add_secret("url_db")
 
     settings.add_config({
         "name": "path",
