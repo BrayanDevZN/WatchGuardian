@@ -4,9 +4,11 @@ on:
     push:
         branches:
             - main
+            - future/cache_db
     pull_request:
         branches:
             - main
+            - future/cache_db
 
 jobs:
 

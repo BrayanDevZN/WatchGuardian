@@ -5,8 +5,7 @@ Teste de CacheManage
 import asyncio
 import os
 
-from src.core.module import Settings
-from src.service.cache import CacheManage
+from src.service.module import CacheManage, Settings
 
 
 async def test_cache() -> None:
