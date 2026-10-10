@@ -28,22 +28,21 @@ class WatchAuth(JWT):
         return secret
 
     # Gera token de usuario com expiracao automatica em UTC
-    async def user_token(self) -> str:
+    async def user_token(self, payload: dict | None = None) -> str:
 
         exp = datetime.now(timezone.utc) + timedelta(hours=1)
 
-        payload = {
-            "exp": exp,
-            "type": "user_token"
-        }
+        token_payload = dict(payload or {})
+        token_payload["exp"] = exp
+        token_payload["type"] = "user_token"
 
-        return await self.encode(payload=payload)
+        return await self.encode(payload=token_payload)
 
     # Gera refresh token sem expiracao
-    async def refresh_token(self) -> str:
+    async def refresh_token(self, payload: dict | None = None) -> str:
 
-        payload = {
-            "type": "refresh_token"
-        }
+        token_payload = dict(payload or {})
+        token_payload.pop("exp", None)
+        token_payload["type"] = "refresh_token"
 
-        return await self.encode(payload=payload)
+        return await self.encode(payload=token_payload)
