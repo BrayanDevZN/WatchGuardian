@@ -19,7 +19,7 @@ def server(subparser) -> None:
     )
 
     run_parser = server_cmd.add_parser("run")
-    run_parser.add_argument("module")
+    run_parser.add_argument("app")
     run_parser.add_argument("--host", default="127.0.0.1")
     run_parser.add_argument("--port", type=int, default=8000)
     run_parser.add_argument("--detached", action="store_true")
@@ -88,7 +88,7 @@ async def run_server(args) -> None:
 
     if args.command == "run":
         command = (
-            f"uvicorn {args.module} "
+            f"uvicorn {args.app} "
             f"--host {args.host} "
             f"--port {args.port}"
         )
