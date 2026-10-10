@@ -3,6 +3,7 @@ Teste de WatchAuth.
 """
 
 import asyncio
+from datetime import datetime, timedelta, timezone
 import os
 
 from src.service.module import Settings, WatchAuth
@@ -31,15 +32,12 @@ async def test_token() -> None:
         settings=settings
     )
 
-    payload = {
-        "sub": "test-user",
-        "role": "admin"
-    }
+    exp = datetime.now(timezone.utc) + timedelta(hours=1)
 
-    print("\n=== ENCODE ===")
+    print("\n=== USER TOKEN ===")
 
-    token = await watch_auth.encode(
-        payload=payload
+    token = await watch_auth.user_token(
+        exp=exp
     )
 
     print(token)
@@ -52,7 +50,9 @@ async def test_token() -> None:
 
     print(decoded)
 
-    assert decoded == payload
+    assert decoded["type"] == "user_token"
+    assert decoded["exp"] == int(exp.timestamp())
+    assert set(decoded.keys()) == {"exp", "type"}
 
     print("\n=== TESTE FINALIZADO ===")
 
