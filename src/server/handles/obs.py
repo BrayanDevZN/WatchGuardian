@@ -1,5 +1,6 @@
 "rota de observabilidade"
-from src.service.module import logger, WatchDb
+from src.auth.token import logger
+from src.service.db import WatchDb
 from fastapi import APIRouter, Request, Depends
 from src.server.depends import depends_user
 from src.server.schema.obs import CreateObs, UpdateObs
