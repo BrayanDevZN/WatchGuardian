@@ -3,20 +3,18 @@
 from src.service.module import Settings, WatchServer
 
 
-ENV_FILE = ".env"
+settings = Settings()
 
-settings = Settings(env_file=ENV_FILE)
-
-settings.add_secret(
-    [
-        "secret",
-        "origin",
-        "host",
-        "port",
-        "password",
-        "rate_limit",
-        "url_db",
-    ]
+settings.secrets.update(
+    {
+        "secret": "functional-test-secret",
+        "origin": "*",
+        "host": "127.0.0.1",
+        "port": "6379",
+        "password": None,
+        "rate_limit": "1000",
+        "url_db": None,
+    }
 )
 
 server = WatchServer(settings=settings)
