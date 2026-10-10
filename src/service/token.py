@@ -1,6 +1,6 @@
 "junta settings com token"
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from src.core.module import Settings
@@ -27,13 +27,10 @@ class WatchAuth(JWT):
 
         return secret
 
-    # Gera token de usuario com expiracao em UTC
-    async def user_token(self, exp: datetime) -> str:
+    # Gera token de usuario com expiracao automatica em UTC
+    async def user_token(self) -> str:
 
-        if exp.tzinfo is None:
-            exp = exp.replace(tzinfo=timezone.utc)
-        else:
-            exp = exp.astimezone(timezone.utc)
+        exp = datetime.now(timezone.utc) + timedelta(hours=1)
 
         payload = {
             "exp": exp,
