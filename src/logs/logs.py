@@ -60,7 +60,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="SUCCESS",
+                level=self.green("SUCCESS"),
                 time=now,
             )
         )
@@ -82,7 +82,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="INFO",
+                level=self.cyan("INFO"),
                 time=now,
             )
         )
@@ -104,7 +104,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="WARNING",
+                level=self.yellow("WARNING"),
                 time=now,
             )
         )
@@ -126,7 +126,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="ERROR",
+                level=self.red("ERROR"),
                 time=now,
             )
         )
@@ -148,7 +148,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="DEBUG",
+                level=self.magenta("DEBUG"),
                 time=now,
             )
         )
@@ -172,7 +172,7 @@ class Logs(Colors):
         print(
             self._format(
                 text=new_text,
-                level="CRITICAL",
+                level=self.red("CRITICAL"),
                 time=now,
             )
         )
