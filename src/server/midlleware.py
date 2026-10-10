@@ -16,7 +16,7 @@ class Midlleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request:Request, call_next):
 
-        name = f"rate_limit:{request.client.host + request.client.port}"
+        name = f"rate_limit:{str(request.client.host) + str(request.client.port)}"
 
         rate_limit = int(self.settings.required_secrets(secret="rate_limit"))
         
@@ -38,4 +38,4 @@ class Midlleware(BaseHTTPMiddleware):
         await self.cache.incr(key=name)
 
         
-        await call_next(request)
+        return await call_next(request)

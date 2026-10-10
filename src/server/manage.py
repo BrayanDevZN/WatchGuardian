@@ -28,11 +28,11 @@ class Server:
         logger.info("Criando configuração de cors...")
 
         origin = self.settings.required_secrets(secret="origin")
-        origin = list(origin) if "[" in origin else origin 
+        self.origin = list(origin) if "[" in origin else origin 
 
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=origin,
+            allow_origins=self.origin,
             allow_headers=["*"],
             allow_methods=["*"]
         )
@@ -58,7 +58,8 @@ class Server:
         self.app.add_middleware(
             Midlleware,
             settings=self.settings,
-            cache=self.cache
+            cache=self.cache,
+            origin=self.origin
         )
 
         logger.success("Midlleware criado!!")
