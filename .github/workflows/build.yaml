@@ -1,0 +1,54 @@
+name: build
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+
+    build:
+
+        runs-on: ubuntu-latest
+
+        steps:
+
+            - uses: actions/checkout@v4
+            
+            - uses: actions/setup-python@v5
+              with:
+                python_version: "3.14"
+
+            - name: install dependences
+              run: pip install -r requirements.txt
+
+            - name: bootstrap
+              run: python -m src.cli.main migrate make_tables
+
+            - name: unit
+              run:
+                |
+                python -m tests.unit.database
+                python -m tests.unit.logs
+
+            - name: integration
+              run:
+                |
+                python -m tests.integration.watch_logs
+                python -m tests.integration.watch_obs
+
+            
+
+            - name: drop tables
+              run: python -m src.cli.main
+
+            
+            
+
+
+
+
+

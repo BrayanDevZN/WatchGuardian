@@ -87,10 +87,6 @@ async def test_watch_logs() -> None:
         settings=settings
     )
 
-    print("\n=== CREATE TABLES ===")
-
-    await watch_db.create_tables()
-
     # Limpa dados antigos antes do teste
     await watch_db.reset_tables()
 
@@ -245,14 +241,6 @@ async def test_watch_logs() -> None:
     result = await watch_db.logs.select()
 
     print(result)
-
-    # =========================================================
-    # DROP
-    # =========================================================
-
-    print("\n=== DROP TABLES ===")
-
-    await watch_db.drop_tables()
 
     print("\n=== TESTE FINALIZADO ===")
 

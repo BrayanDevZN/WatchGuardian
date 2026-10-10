@@ -36,10 +36,6 @@ async def test_watch_obs() -> None:
         settings=settings
     )
 
-    print("\n=== CREATE TABLES ===")
-
-    await watch_db.create_tables()
-
     print("\n=== RESET TABLES ===")
 
     await watch_db.reset_tables()
@@ -79,7 +75,6 @@ async def test_watch_obs() -> None:
 
         print("Task finalizada normalmente")
 
-    # Espera logs em background
     if logs._tasks:
         await asyncio.gather(
             *logs._tasks
@@ -114,7 +109,6 @@ async def test_watch_obs() -> None:
             f"Erro capturado fora do context manager: {error}"
         )
 
-    # Espera logs em background
     if logs._tasks:
         await asyncio.gather(
             *logs._tasks
@@ -171,14 +165,6 @@ async def test_watch_obs() -> None:
     result = await watch_db.observability.select()
 
     print(result)
-
-    # =========================================================
-    # DROP TABLES
-    # =========================================================
-
-    print("\n=== DROP TABLES ===")
-
-    await watch_db.drop_tables()
 
     print("\n=== TESTE FINALIZADO ===")
 

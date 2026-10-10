@@ -18,9 +18,6 @@ async def test_db() -> None:
 
     await control_db.run()
 
-    print("\n=== CREATE TABLES ===")
-    await control_db.create_tables()
-
     # =========================================================
     # LOGS
     # =========================================================
@@ -134,42 +131,6 @@ async def test_db() -> None:
     print(result)
 
     # =========================================================
-    # DELETE
-    # =========================================================
-
-    print("\n=== DELETE LOG ===")
-
-    result = await control_db.logs.delete(
-        id=log_id
-    )
-
-    print(result)
-
-    print("\n=== DELETE OBSERVABILITY ===")
-
-    result = await control_db.observability.delete(
-        public_id=observability_public_id
-    )
-
-    print(result)
-
-    print("\n=== VERIFY LOG DELETE ===")
-
-    result = await control_db.logs.select(
-        id=log_id
-    )
-
-    print(result)
-
-    print("\n=== VERIFY OBSERVABILITY DELETE ===")
-
-    result = await control_db.observability.select(
-        id=observability_id
-    )
-
-    print(result)
-
-    # =========================================================
     # RESET TABLES
     # =========================================================
 
@@ -212,14 +173,6 @@ async def test_db() -> None:
     print(
         await control_db.observability.select()
     )
-
-    # =========================================================
-    # DROP TABLES
-    # =========================================================
-
-    print("\n=== DROP TABLES ===")
-
-    await control_db.drop_tables()
 
     print("\n=== TESTE FINALIZADO ===")
 
