@@ -43,7 +43,7 @@ jobs:
             
 
             - name: drop tables
-              run: python -m src.cli.main
+              run: python -m src.cli.main migrate drop
 
             
             
