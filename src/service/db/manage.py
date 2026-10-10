@@ -1,24 +1,37 @@
 """
-Gerencia banco e cache opcional para os services de tabelas.
+Gerencia acesso aos dados por banco local ou HTTP com cache-aside opcional.
 """
 
 from src.core.module import Settings, config_url
 from src.database.manage import ControlDb
 from src.service.cache import CacheManage
+from src.service.client import ClientHttp
 
 from .merge import MergeDb
 
 
-class WatchDb(ControlDb, MergeDb):
+class WatchDb(MergeDb):
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, http: bool = False) -> None:
         self.settings = settings
+        self.http = http
+        self.control: ControlDb | ClientHttp
 
-        url = settings.get_secret(secret_name="url")
-        path = settings.get_config(name="path")
-        url = config_url(url=url, path=path)
+        if self.http:
+            settings.add_secret(["url", "token"])
+            settings.required_secrets("token")
 
-        ControlDb.__init__(self, url=url)
+            self.control = ClientHttp(settings=settings)
+        else:
+            settings.add_secret("url_db")
+
+            url = settings.get_secret(secret_name="url_db")
+            path = settings.get_config(name="path")
+            url = config_url(url=url, path=path)
+
+            self.control = ControlDb(url=url)
+
+        settings.add_secret(["host", "port"])
 
         host = settings.get_secret(secret_name="host")
         port = settings.get_secret(secret_name="port")
@@ -29,11 +42,12 @@ class WatchDb(ControlDb, MergeDb):
             self.cache = CacheManage(settings=settings)
 
     async def _initializate(self) -> "WatchDb":
-        await self.run()
+        if isinstance(self.control, ControlDb):
+            await self.control.run()
 
         MergeDb.__init__(
             self,
-            control_db=self,
+            control=self.control,
             cache=self.cache,
         )
 
