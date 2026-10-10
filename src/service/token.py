@@ -6,12 +6,12 @@ from src.auth.token import JWT, logger
 import uuid
 class WatchAuth(JWT):
 
-    def __init__(self, settings:Settings)-> None:
+    def __init__(self, settings:Settings|None=None)-> None:
 
-        secret = settings.required_secrets("secret")
+        secret = settings.get_secret("secret") if settings is not None else None
 
-
-        super().__init__(secret)
+        if secret is not None:
+            super().__init__(secret)
 
     #Gera uma secret se prescisar
     def secret(self) -> str:
