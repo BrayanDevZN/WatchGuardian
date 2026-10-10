@@ -1,8 +1,8 @@
 "rota de observabilidade"
 from src.service.module import logger, WatchDb
 from fastapi import APIRouter, Request, Depends
-from src.controller.depends import depends_user
-from src.controller.schema.obs import CreateObs, UpdateObs
+from src.server.depends import depends_user
+from src.server.schema.obs import CreateObs, UpdateObs
 from fastapi.responses import JSONResponse
 
 obs_router = APIRouter(prefix="/obs", tags=["obs"])
