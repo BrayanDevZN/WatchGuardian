@@ -36,8 +36,7 @@ class Midlleware(BaseHTTPMiddleware):
 
         await self.cache.incr(key=name)
 
-        request.state = self.settings
-
+        
         await call_next(request)
     
 
