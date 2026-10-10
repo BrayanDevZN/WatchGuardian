@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from jwt.exceptions import InvalidSignatureError
 
-from src.service.module import WatchAuth, logger
+from src.service.token import WatchAuth, logger
 
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
