@@ -15,7 +15,7 @@ class WatchDb(ControlDb):
         url = config_url(url=url, path=path)
         super().__init__(url)
 
-    async def _initializate(self) -> WatchDb:
+    async def _initializate(self) -> "WatchDb":
 
         await self.run()
         return self 
