@@ -4,6 +4,7 @@ Junta todos os comandos CLI
 
 from .migrate import migrate, run_migrate
 from .auth import auth, run_auth
+from .server import server, run_server
 
 import argparse
 import asyncio
@@ -21,6 +22,7 @@ async def run() -> None:
     commands = [
         migrate,
         auth,
+        server,
     ]
 
     for command in commands:
@@ -33,6 +35,9 @@ async def run() -> None:
 
     elif args.module == "auth":
         await run_auth(args)
+
+    elif args.module == "server":
+        await run_server(args)
 
 
 def main() -> None:
