@@ -38,11 +38,11 @@ async def test_token() -> None:
 
     print("\n=== USER TOKEN ===")
 
-    before = datetime.now(timezone.utc).timestamp()
+    before = int(datetime.now(timezone.utc).timestamp())
     token = await watch_auth.user_token(
         payload=payload
     )
-    after = datetime.now(timezone.utc).timestamp()
+    after = int(datetime.now(timezone.utc).timestamp())
 
     print(token)
 
