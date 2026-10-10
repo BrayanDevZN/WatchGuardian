@@ -2,8 +2,8 @@
 Junta os controles das tabelas de banco com cache opcional.
 """
 
-from src.cache.manage import RedisManage as CacheManage
 from src.database.manage import ControlDb
+from src.service.cache import CacheManage
 
 from .logs import LogsService
 from .obs import ObsService
