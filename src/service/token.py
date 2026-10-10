@@ -41,3 +41,12 @@ class WatchAuth(JWT):
         }
 
         return await self.encode(payload=payload)
+
+    # Gera refresh token sem expiracao
+    async def refresh_token(self) -> str:
+
+        payload = {
+            "type": "refresh_token"
+        }
+
+        return await self.encode(payload=payload)
