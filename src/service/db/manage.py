@@ -41,6 +41,23 @@ class WatchDb(MergeDb):
         if host is not None and port is not None:
             self.cache = CacheManage(settings=settings)
 
+    def _local_control(self) -> ControlDb:
+        if not isinstance(self.control, ControlDb):
+            raise RuntimeError(
+                "Operacoes de migracao so podem ser executadas com banco local."
+            )
+
+        return self.control
+
+    async def create_tables(self) -> None:
+        await self._local_control().create_tables()
+
+    async def reset_tables(self) -> None:
+        await self._local_control().reset_tables()
+
+    async def drop_tables(self) -> None:
+        await self._local_control().drop_tables()
+
     async def _initializate(self) -> "WatchDb":
         if isinstance(self.control, ControlDb):
             await self.control.run()
