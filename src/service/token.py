@@ -33,7 +33,7 @@ class WatchAuth(JWT):
         exp = datetime.now(timezone.utc) + timedelta(hours=1)
 
         token_payload = dict(payload or {})
-        token_payload["exp"] = exp.isoformat()
+        token_payload["exp"] = int(exp.timestamp())
         token_payload["type"] = "user_token"
 
         return await self.encode(payload=token_payload)
