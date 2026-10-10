@@ -1,55 +1,56 @@
 "Le o token e valida ele"
 
-from fastapi import HTTPException, Depends, Request
+from fastapi import HTTPException, Request
+from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError
+
 from src.service.token import WatchAuth, logger
-from jwt.exceptions import InvalidSignatureError
-from datetime import datetime, timezone, timedelta
-async def depends_user(request:Request):
+
+
+async def depends_user(request: Request):
 
     try:
-
         logger.info("Validando usuario...")
 
-        settings = request.state.settings
-
-        token = request.headers.get("Bearer X-user_token")
+        settings = request.app.state.settings
+        token = request.headers.get("X-user_token")
 
         if token is None:
-
             raise HTTPException(
-                detail="Expeted header 'Bearer X-user_token'",
-                status_code=401
+                detail="Expeted header 'X-user_token'",
+                status_code=401,
             )
 
         auth = WatchAuth(settings=settings)
+        payload = await auth.decode(token)
 
-
-        token = await auth.decode(token)
-        exp = datetime.strptime(token["exp"], "2026-10-10T18:30:00+00:00")
-        now = datetime.now(timezone.utc)
-        if now > exp:
-
+        if payload.get("type") != "user_token":
             raise HTTPException(
                 status_code=401,
-                detail="Expire X-user_token"
+                detail="Invalid X-user_token type",
             )
 
-        
+        return payload
 
-
-
-    except InvalidSignatureError:
-
-        logger.error("Usuario invalido")
-
+    except ExpiredSignatureError:
+        logger.error("Token expirado")
         raise HTTPException(
             status_code=401,
-            detail="Invalid user"
+            detail="Expire X-user_token",
         )
 
-    except Exception as error:
-
+    except InvalidSignatureError:
+        logger.error("Usuario invalido")
         raise HTTPException(
-            detail=error,
-            status_code=501
+            status_code=401,
+            detail="Invalid user",
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.error(f"Erro ao validar usuario: {error}")
+        raise HTTPException(
+            detail=str(error),
+            status_code=401,
         )
