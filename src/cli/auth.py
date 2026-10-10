@@ -3,6 +3,7 @@ Comandos CLI de autenticação.
 """
 
 import argparse
+import json
 
 from src.logs.module import Logs
 from src.service.module import Settings, WatchAuth
@@ -34,6 +35,10 @@ def auth(subparser) -> None:
         ],
         required=True
     )
+    token_parser.add_argument(
+        "--payload",
+        default=None
+    )
 
 
 async def run_auth(args) -> None:
@@ -62,11 +67,21 @@ async def run_auth(args) -> None:
             settings=settings
         )
 
+        payload = (
+            json.loads(args.payload)
+            if args.payload is not None
+            else None
+        )
+
         if args.token_type == "user_token":
-            token = await watch_auth.user_token()
+            token = await watch_auth.user_token(
+                payload=payload
+            )
 
         elif args.token_type == "refresh_token":
-            token = await watch_auth.refresh_token()
+            token = await watch_auth.refresh_token(
+                payload=payload
+            )
 
         logger.success(
             f"Token: {token}"
