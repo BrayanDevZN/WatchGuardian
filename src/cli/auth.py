@@ -34,14 +34,6 @@ def auth(subparser) -> None:
 
 async def run_auth(args) -> None:
 
-    env = args.env_file
-
-    settings = (
-        Settings(env_file=env)
-        if env is not None
-        else Settings()
-    )
-
     if args.command == "secret":
         watch_auth = WatchAuth()
         secret = watch_auth.secret()
@@ -51,6 +43,14 @@ async def run_auth(args) -> None:
         )
 
     elif args.command == "token":
+        env = args.env_file
+
+        settings = (
+            Settings(env_file=env)
+            if env is not None
+            else Settings()
+        )
+
         settings.add_secret("secret")
         settings.required_secrets("secret")
 
