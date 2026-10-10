@@ -1,6 +1,7 @@
 
 "rota de logs"
-from src.service.module import logger, WatchDb
+from src.auth.token import logger
+from src.service.db import WatchDb
 from fastapi import APIRouter, HTTPException, Request, Depends
 from src.server.depends import depends_user
 from src.server.schema.logs import CreateLog, UpdateLog
@@ -72,24 +73,3 @@ async def delete_log(request:Request, id:int|None = None, public_id:str|None=Non
     await control_db.logs.delete(public_id=public_id, id=id)
 
     return JSONResponse(status_code=201, content="sucess")
-
-
-    
-
-
-
-    
-
-
-
-
-    
-
-
-
-
-    
-
-
-
-
