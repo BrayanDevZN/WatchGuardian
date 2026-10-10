@@ -4,8 +4,7 @@ Teste de WatchLogs
 
 import asyncio
 
-from src.service.logs import WatchDb, WatchLogs
-from src.service.db import Settings
+from src.service.module import Settings, WatchDb, WatchLogs
 
 
 async def test_watch_logs() -> None:
