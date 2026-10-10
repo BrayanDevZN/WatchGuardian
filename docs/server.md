@@ -2,13 +2,11 @@
 
 Este documento explica como configurar, iniciar e consumir o servidor HTTP do WatchGuardian.
 
-O servidor é construído sobre FastAPI e atualmente reúne as rotas de logs, observabilidade e autenticação/refresh de token.
+O servidor é construído sobre FastAPI e reúne as rotas de logs, observabilidade e autenticação/refresh de token.
 
 ---
 
 ## 1. Estrutura do servidor
-
-A implementação do servidor fica em:
 
 ```text
 src/server/
@@ -26,21 +24,21 @@ src/server/
 
 Responsabilidades principais:
 
-- `manage.py`: cria a aplicação FastAPI, registra CORS, rotas e middleware.
+- `manage.py`: cria o FastAPI, registra CORS, routers e middleware.
 - `midlleware.py`: aplica rate limit usando Redis.
-- `depends.py`: valida o token de usuário nas rotas protegidas.
+- `depends.py`: valida o `user_token` nas rotas protegidas.
 - `handles/logs.py`: CRUD HTTP de logs.
 - `handles/obs.py`: CRUD HTTP de observabilidade.
-- `handles/auth.py`: gera um novo `user_token` usando o token antigo e um `refresh_token`.
-- `schema/`: contém os schemas Pydantic usados nas entradas das rotas.
+- `handles/auth.py`: gera um novo `user_token` usando o token antigo e o `refresh_token`.
+- `schema/`: schemas Pydantic usados pelos handlers.
 
 ---
 
-## 2. Criando o Settings
+## 2. Settings
 
-O `Server` recebe um objeto `Settings` já configurado.
+O `Server` recebe uma instância de `Settings` já preparada.
 
-Exemplo usando um arquivo `.env`:
+Com arquivo `.env` explícito:
 
 ```python
 from src.service.module import Settings
@@ -48,174 +46,328 @@ from src.service.module import Settings
 settings = Settings(env_file=".env")
 ```
 
-Ou deixando o `python-dotenv` procurar o `.env` padrão:
+Ou usando o `.env` padrão encontrado pelo `python-dotenv`:
 
 ```python
 settings = Settings()
 ```
 
-Importante: carregar o arquivo `.env` não adiciona automaticamente as variáveis ao dicionário interno de `Settings`.
+Carregar o `.env` não adiciona automaticamente as variáveis ao dicionário interno de `Settings`. As variáveis precisam ser registradas com `add_secret()` antes de serem usadas por `required_secrets()` ou `get_secret()`.
 
-Antes de iniciar o servidor, registre as variáveis necessárias com `add_secret()`:
+### Variáveis obrigatórias para o servidor
 
 ```python
 settings.add_secret([
     "host",
     "port",
-    "password",
     "origin",
     "rate_limit",
     "secret",
+])
+```
+
+### Variáveis opcionais
+
+```python
+settings.add_secret([
+    "password",
     "url",
 ])
 ```
 
-Variáveis opcionais podem continuar com valor `None`, desde que o módulo que as consome aceite isso.
+`password` e `url` podem ficar `None`.
+
+### Config opcional `path`
+
+`path` não é variável de ambiente no fluxo atual. Ele é uma config interna adicionada com `add_config()`:
+
+```python
+settings.add_config({
+    "name": "path",
+    "value": "./data"
+})
+```
+
+O `path` é opcional e só participa da configuração do banco quando `url` não foi fornecida.
 
 ---
 
-## 3. Variáveis de ambiente
+## 3. Variáveis e configs
 
-### 3.1 Redis
+### 3.1 `host`
 
-O servidor usa Redis no middleware de rate limit.
+**Obrigatória:** sim.
 
-Variáveis:
+Usada pelo `CacheManage` para criar a conexão Redis.
 
 ```env
 host=localhost
+```
+
+Sem `host`, o `Server` não consegue criar o cache porque `CacheManage` usa `required_secrets("host")`.
+
+---
+
+### 3.2 `port`
+
+**Obrigatória:** sim.
+
+Porta do Redis.
+
+```env
 port=6379
-password=
 ```
 
-Descrição:
-
-| Variável | Obrigatória | Uso |
-| --- | --- | --- |
-| `host` | Sim | Host do Redis. |
-| `port` | Sim | Porta do Redis. |
-| `password` | Não | Senha do Redis. Pode ser `None` quando a instância não exige autenticação. |
-
-O `CacheManage` usa essas variáveis para criar a conexão Redis.
+Assim como `host`, é lida com `required_secrets()`.
 
 ---
 
-### 3.2 Rate limit
+### 3.3 `password`
+
+**Obrigatória:** não.
+
+Senha do Redis quando a instância exige autenticação.
 
 ```env
-rate_limit=100
+password=minha-senha
 ```
 
-`rate_limit` define a quantidade máxima de requisições permitida pelo middleware dentro da janela controlada pelo cache.
-
-O valor é carregado como string pelo ambiente e convertido para `int` no middleware.
-
-Exemplo:
-
-```env
-rate_limit=100
-```
+Se o Redis não usar senha, a variável pode ser omitida ou resultar em `None`. O `CacheManage` lê esse valor com `get_secret()`.
 
 ---
 
-### 3.3 CORS / Origin
+### 3.4 `origin`
+
+**Obrigatória:** sim.
+
+Usada na configuração de CORS do servidor.
 
 ```env
 origin=http://localhost:3000
 ```
 
-`origin` define quais origens podem acessar a API pelo navegador.
+O `Server._cors()` usa:
 
-Exemplo para um único frontend:
-
-```env
-origin=http://localhost:3000
+```python
+self.settings.required_secrets(secret="origin")
 ```
 
-Se forem usadas várias origens, mantenha o formato esperado pela configuração da aplicação e garanta que o valor seja convertido para uma lista antes de ser entregue ao `CORSMiddleware`.
+Portanto, `origin` não pode estar ausente, `None` ou vazia.
 
 ---
 
-### 3.4 JWT Secret
+### 3.5 `rate_limit`
+
+**Obrigatória:** sim para o middleware de rate limit.
+
+Define o limite de requisições controlado pelo Redis.
+
+```env
+rate_limit=100
+```
+
+O middleware lê esse valor com `required_secrets()` e converte para `int`:
+
+```python
+rate_limit = int(self.settings.required_secrets(secret="rate_limit"))
+```
+
+O valor precisa representar um inteiro válido.
+
+---
+
+### 3.6 `secret`
+
+**Obrigatória:** sim para autenticação e rotas protegidas.
+
+Usada para assinar e validar os JWTs.
 
 ```env
 secret=uma-secret-segura
 ```
-
-`secret` é usada para assinar e validar os JWTs do WatchGuardian.
 
 Ela é necessária para:
 
 - validar `user_token`;
 - validar `refresh_token`;
 - criar novos tokens;
-- usar o endpoint `/auth/refresh`.
+- acessar as rotas protegidas por `depends_user`;
+- usar `/auth/refresh`.
 
-A mesma secret deve ser usada para gerar e validar os tokens.
-
-Também é possível gerar uma secret pela CLI do projeto:
+É possível gerar uma secret pela CLI:
 
 ```bash
 python -m src.cli.main auth secret
 ```
 
-Esse comando imprime a secret. Ele não grava automaticamente o valor no `.env`.
+O comando apenas imprime a secret. Ele não salva automaticamente no `.env`.
 
 ---
 
-### 3.5 Banco de dados
+### 3.7 `url`
 
-A URL do banco é lida pela variável:
+**Obrigatória:** não.
+
+A `url` define explicitamente qual banco será usado.
+
+Exemplo PostgreSQL:
 
 ```env
 url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
 ```
 
-`url` é opcional na camada `WatchDb`.
+Exemplo SQLite explícito:
 
-Quando ela não estiver configurada, `config_url()` pode usar o caminho local configurado pelo projeto para criar a URL alternativa de banco.
-
-Para disponibilizar a variável no `Settings`:
-
-```python
-settings.add_secret("url")
+```env
+url=sqlite+aiosqlite:///./watchguardian.db
 ```
 
-Se quiser fornecer um caminho por configuração interna:
+O `WatchDb` usa:
+
+```python
+url = settings.get_secret(secret_name="url")
+```
+
+Portanto, `url=None` é válido.
+
+A prioridade do banco é:
+
+```text
+url definida
+    ↓
+usa exatamente a url informada
+
+url None + path definido
+    ↓
+usa SQLite em <path>/watch.db
+
+url None + path None
+    ↓
+usa sqlite+aiosqlite:///watch.db
+```
+
+Ou seja, o projeto funciona sem uma variável `url`.
+
+---
+
+### 3.8 `path`
+
+**Obrigatória:** não.
+
+**Tipo:** config interna de `Settings`, não secret/env no fluxo atual.
+
+É usada somente como fallback do SQLite quando `url` é `None`.
+
+Exemplo:
 
 ```python
 settings.add_config({
     "name": "path",
-    "value": "./data.db"
+    "value": "./data"
 })
+```
+
+Com esse valor, `config_url()` monta:
+
+```text
+sqlite+aiosqlite:///./data/watch.db
+```
+
+O diretório informado em `path` precisa existir. Se não existir, `config_url()` levanta `FileNotFoundError`.
+
+Exemplo:
+
+```bash
+mkdir -p data
+```
+
+Depois:
+
+```python
+settings.add_config({
+    "name": "path",
+    "value": "./data"
+})
+```
+
+Não passe o nome do arquivo SQLite em `path`. O próprio `config_url()` acrescenta `watch.db` ao caminho.
+
+Correto:
+
+```python
+{"name": "path", "value": "./data"}
+```
+
+Resultado:
+
+```text
+./data/watch.db
+```
+
+Se `url` estiver definida, `path` é ignorado.
+
+Se nem `url` nem `path` forem definidos, o fallback é:
+
+```text
+sqlite+aiosqlite:///watch.db
 ```
 
 ---
 
-## 4. Exemplo de `.env`
+## 4. Resumo das variáveis
 
-Exemplo completo para desenvolvimento local:
+| Nome | Tipo | Obrigatória? | Usada por | Comportamento se ausente |
+| --- | --- | --- | --- | --- |
+| `host` | env/secret | Sim | Redis / `CacheManage` | erro em `required_secrets()` |
+| `port` | env/secret | Sim | Redis / `CacheManage` | erro em `required_secrets()` |
+| `password` | env/secret | Não | Redis | fica `None` |
+| `origin` | env/secret | Sim | CORS | erro em `required_secrets()` |
+| `rate_limit` | env/secret | Sim para rate limit | middleware | erro quando o middleware tenta ler o limite |
+| `secret` | env/secret | Sim para auth | JWT / rotas protegidas / refresh | autenticação não consegue funcionar corretamente |
+| `url` | env/secret | Não | banco | usa fallback SQLite |
+| `path` | config | Não | fallback SQLite | usa `sqlite+aiosqlite:///watch.db` |
+
+### Prioridade do banco
+
+| `url` | `path` | Banco usado |
+| --- | --- | --- |
+| definida | qualquer valor | usa `url` |
+| `None` | diretório existente | `<path>/watch.db` |
+| `None` | `None` | `watch.db` na raiz de execução |
+
+---
+
+## 5. Exemplo de `.env`
+
+Configuração mínima típica usando Redis, autenticação e SQLite padrão:
 
 ```env
 host=localhost
 port=6379
-password=
-
 origin=http://localhost:3000
 rate_limit=100
-
 secret=troque-esta-secret
-
-url=sqlite+aiosqlite:///./watchguardian.db
 ```
 
-Em produção, não versione secrets reais no Git.
+Redis com senha:
+
+```env
+password=minha-senha
+```
+
+Banco externo opcional:
+
+```env
+url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
+```
+
+Se `url` não existir, isso não é erro. O sistema pode usar SQLite.
 
 ---
 
-## 5. Criando o servidor
+## 6. Criando o servidor
 
-Importe `Server` diretamente de `src.server.manage`:
+### 6.1 Usando o SQLite padrão
 
 ```python
 from src.server.manage import Server
@@ -233,25 +385,86 @@ settings.add_secret([
     "url",
 ])
 
-server = Server(settings=settings)
-app = server.run()
+app = Server(settings=settings).run()
 ```
 
-O `run()` retorna a instância do FastAPI.
+Mesmo registrando `url`, ela pode estar ausente no ambiente. Nesse caso `get_secret("url")` retorna `None` e o banco cai no fallback.
 
-O `Server` também salva o objeto `Settings` no estado global da aplicação:
+Sem `url` e sem `path`, o banco será:
+
+```text
+sqlite+aiosqlite:///watch.db
+```
+
+### 6.2 Escolhendo a pasta do SQLite
 
 ```python
-app.state.settings
+from src.server.manage import Server
+from src.service.module import Settings
+
+settings = Settings(env_file=".env")
+
+settings.add_secret([
+    "host",
+    "port",
+    "password",
+    "origin",
+    "rate_limit",
+    "secret",
+    "url",
+])
+
+settings.add_config({
+    "name": "path",
+    "value": "./data"
+})
+
+app = Server(settings=settings).run()
 ```
 
-Isso permite que handlers recuperem a mesma configuração sem recriar `Settings` em cada requisição.
+Nesse exemplo, se `url` for `None`, o banco será criado/usado em:
+
+```text
+./data/watch.db
+```
+
+O diretório `./data` precisa existir antes.
+
+### 6.3 Usando banco externo
+
+Basta definir `url`:
+
+```env
+url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
+```
+
+Quando `url` existe, ela tem prioridade e `path` não interfere.
 
 ---
 
-## 6. Executando com Uvicorn
+## 7. `app.state`
 
-Supondo que o código anterior esteja em um arquivo `main.py` na raiz:
+O `Server` salva o `Settings` globalmente na aplicação:
+
+```python
+self.app.state.settings = settings
+```
+
+Nos handlers:
+
+```python
+settings = request.app.state.settings
+```
+
+Use `app.state` para objetos compartilhados pela aplicação, como configurações e clientes globais.
+
+Para informações específicas de uma requisição, use `request.state`.
+
+---
+
+## 8. Executando com Uvicorn
+
+Supondo que o objeto `app` esteja em `main.py`:
 
 ```bash
 uvicorn main:app --reload
@@ -263,7 +476,7 @@ Para expor na rede:
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-A documentação automática do FastAPI normalmente fica disponível em:
+Documentação automática do FastAPI:
 
 ```text
 /docs
@@ -272,7 +485,97 @@ A documentação automática do FastAPI normalmente fica disponível em:
 
 ---
 
-## 7. Rotas de logs
+## 9. Autenticação das rotas
+
+As rotas de logs e observabilidade usam `depends_user`.
+
+O token normal é um JWT com:
+
+```json
+{
+  "exp": "2026-10-10T18:30:00+00:00",
+  "type": "user_token"
+}
+```
+
+O `exp` é salvo como string ISO UTC.
+
+O `refresh_token` possui:
+
+```json
+{
+  "type": "refresh_token"
+}
+```
+
+No formato atual ele não possui `exp`.
+
+---
+
+## 10. Gerando tokens pela CLI
+
+User token:
+
+```bash
+python -m src.cli.main auth --env-file .env token --type user_token
+```
+
+Com payload:
+
+```bash
+python -m src.cli.main auth --env-file .env token --type user_token --payload '{"user_id":"123","role":"admin"}'
+```
+
+Refresh token:
+
+```bash
+python -m src.cli.main auth --env-file .env token --type refresh_token --payload '{"user_id":"123"}'
+```
+
+Gerar secret:
+
+```bash
+python -m src.cli.main auth secret
+```
+
+---
+
+## 11. Endpoint de refresh
+
+```http
+POST /auth/refresh
+```
+
+Esse endpoint não usa `Depends` de propósito, porque ele precisa aceitar o token normal antigo para gerar outro.
+
+Headers obrigatórios:
+
+```text
+X-user_token: <user-token-antigo>
+X-refresh_token: <refresh-token>
+```
+
+Fluxo:
+
+1. recebe os dois tokens;
+2. valida a assinatura;
+3. exige `type=user_token` no token normal;
+4. exige `type=refresh_token` no refresh;
+5. copia o payload do token antigo;
+6. remove `exp` e `type` antigos;
+7. cria um novo `user_token` com nova expiração.
+
+Resposta:
+
+```json
+{
+  "token": "<novo-user-token>"
+}
+```
+
+---
+
+## 12. Rotas de logs
 
 Prefixo:
 
@@ -280,15 +583,11 @@ Prefixo:
 /logs
 ```
 
-As rotas de logs usam `depends_user` e, portanto, são rotas protegidas.
-
-### 7.1 Criar log
+### Criar
 
 ```http
 POST /logs/
 ```
-
-Body:
 
 ```json
 {
@@ -297,7 +596,7 @@ Body:
 }
 ```
 
-Status aceitos pelo schema:
+Status aceitos:
 
 ```text
 SUCCESS
@@ -308,42 +607,30 @@ DEBUG
 CRITICAL
 ```
 
----
+### Buscar
 
-### 7.2 Buscar logs
-
-Buscar todos:
+Todos:
 
 ```http
 GET /logs/
 ```
 
-Buscar por ID:
+Por ID:
 
 ```http
 GET /logs/?id=1
 ```
 
-Buscar por `public_id`:
+Por `public_id`:
 
 ```http
 GET /logs/?public_id=<uuid>
 ```
 
-`id` e `public_id` são opcionais. Sem os dois, a camada de banco pode retornar todos os registros.
-
----
-
-### 7.3 Atualizar log
+### Atualizar
 
 ```http
 PATCH /logs/?id=1
-```
-
-ou:
-
-```http
-PATCH /logs/?public_id=<uuid>
 ```
 
 Body parcial:
@@ -354,32 +641,15 @@ Body parcial:
 }
 ```
 
-Também é possível enviar:
-
-```json
-{
-  "log": "Novo conteúdo",
-  "status": "WARNING"
-}
-```
-
----
-
-### 7.4 Deletar log
+### Deletar
 
 ```http
 DELETE /logs/?id=1
 ```
 
-ou:
-
-```http
-DELETE /logs/?public_id=<uuid>
-```
-
 ---
 
-## 8. Rotas de observabilidade
+## 13. Rotas de observabilidade
 
 Prefixo:
 
@@ -387,15 +657,11 @@ Prefixo:
 /obs
 ```
 
-Essas rotas também usam autenticação por token.
-
-### 8.1 Criar observabilidade
+### Criar
 
 ```http
 POST /obs/
 ```
-
-Body:
 
 ```json
 {
@@ -414,13 +680,11 @@ pending
 failure
 ```
 
-Observação: `sucess` está escrito dessa forma no contrato atual do projeto.
+`sucess` está escrito dessa forma no contrato atual do projeto.
 
----
+### Buscar
 
-### 8.2 Buscar observabilidade
-
-Todos os registros:
+Todos:
 
 ```http
 GET /obs/
@@ -438,15 +702,11 @@ Por `public_id`:
 GET /obs/?public_id=<uuid>
 ```
 
----
-
-### 8.3 Atualizar observabilidade
+### Atualizar
 
 ```http
 PATCH /obs/?id=1
 ```
-
-Body parcial:
 
 ```json
 {
@@ -456,7 +716,7 @@ Body parcial:
 }
 ```
 
-Os campos atualizáveis são:
+Campos atualizáveis:
 
 ```text
 task
@@ -465,177 +725,17 @@ content
 latency
 ```
 
----
-
-### 8.4 Deletar observabilidade
+### Deletar
 
 ```http
 DELETE /obs/?id=1
 ```
 
-ou:
-
-```http
-DELETE /obs/?public_id=<uuid>
-```
-
 ---
 
-## 9. Autenticação
+## 14. Redis e rate limit
 
-O WatchGuardian possui dois tipos de token:
-
-```text
-user_token
-refresh_token
-```
-
-### 9.1 User token
-
-O `user_token` possui expiração automática de uma hora.
-
-O payload gerado inclui:
-
-```json
-{
-  "exp": "2026-10-10T18:30:00+00:00",
-  "type": "user_token"
-}
-```
-
-Campos extras podem ser adicionados ao payload.
-
-Exemplo:
-
-```python
-token = await auth.user_token(
-    payload={
-        "user_id": "123",
-        "role": "admin"
-    }
-)
-```
-
----
-
-### 9.2 Refresh token
-
-O `refresh_token` não possui `exp` no formato atual do projeto.
-
-Payload básico:
-
-```json
-{
-  "type": "refresh_token"
-}
-```
-
-Exemplo:
-
-```python
-refresh = await auth.refresh_token(
-    payload={
-        "user_id": "123"
-    }
-)
-```
-
----
-
-## 10. Gerando tokens pela CLI
-
-User token:
-
-```bash
-python -m src.cli.main auth --env-file .env token --type user_token
-```
-
-Com payload adicional:
-
-```bash
-python -m src.cli.main auth --env-file .env token --type user_token --payload '{"user_id":"123","role":"admin"}'
-```
-
-Refresh token:
-
-```bash
-python -m src.cli.main auth --env-file .env token --type refresh_token --payload '{"user_id":"123"}'
-```
-
-Para esses comandos, a variável `secret` precisa estar carregada pelo fluxo da CLI.
-
----
-
-## 11. Endpoint de refresh
-
-O endpoint de refresh não usa `Depends` de propósito.
-
-Isso permite que um `user_token` antigo seja recebido para gerar um novo token, em vez de a dependency rejeitar a requisição antes do handler executar.
-
-Endpoint:
-
-```http
-POST /auth/refresh
-```
-
-Headers obrigatórios:
-
-```text
-X-user_token: <user-token-antigo>
-X-refresh_token: <refresh-token>
-```
-
-O handler:
-
-1. recebe os dois tokens;
-2. valida a assinatura de ambos;
-3. exige `type=user_token` no token normal;
-4. exige `type=refresh_token` no refresh token;
-5. copia o payload do token antigo;
-6. remove `exp` e `type` antigos;
-7. gera um novo `user_token`, com uma nova expiração.
-
-Resposta:
-
-```json
-{
-  "token": "<novo-user-token>"
-}
-```
-
----
-
-## 12. Estado global da aplicação
-
-O servidor salva `Settings` em:
-
-```python
-self.app.state.settings = settings
-```
-
-Dentro de um handler, o valor pode ser recuperado com:
-
-```python
-settings = request.app.state.settings
-```
-
-Use `app.state` para objetos compartilhados pela aplicação, como configurações e clientes reutilizáveis.
-
-Não use `app.state` para dados específicos de um usuário ou de uma única requisição.
-
-Para dados específicos da requisição, use:
-
-```python
-request.state
-```
-
----
-
-## 13. Redis e rate limit
-
-O middleware utiliza `CacheManage` para contar requisições no Redis.
-
-O Redis precisa estar disponível antes do servidor começar a processar requisições protegidas pelo middleware.
+O `CacheManage` é criado no `Server` e usa Redis para o rate limit.
 
 Exemplo local:
 
@@ -643,39 +743,35 @@ Exemplo local:
 docker run --name watchguardian-redis -p 6379:6379 redis:latest
 ```
 
-Com isso:
+Configuração mínima:
 
 ```env
 host=localhost
 port=6379
-password=
-```
-
-O limite é definido por:
-
-```env
 rate_limit=100
 ```
 
+`password` só é necessária quando o Redis exigir senha.
+
 ---
 
-## 14. Banco e tabelas
+## 15. Banco e tabelas
 
-Os handlers de logs e observabilidade criam `WatchDb` usando o mesmo `Settings` armazenado no `app.state`:
+Os handlers criam o banco com o mesmo `Settings` salvo no `app.state`:
 
 ```python
 settings = request.app.state.settings
 control_db = await WatchDb(settings=settings)
 ```
 
-Depois utilizam:
+Depois usam:
 
 ```python
 control_db.logs
 control_db.observability
 ```
 
-As operações disponíveis nas rotas são:
+Operações disponíveis:
 
 ```text
 create
@@ -684,65 +780,4 @@ update
 delete
 ```
 
----
-
-## 15. Exemplo completo de inicialização
-
-```python
-from src.server.manage import Server
-from src.service.module import Settings
-
-
-settings = Settings(env_file=".env")
-
-settings.add_secret([
-    "host",
-    "port",
-    "password",
-    "origin",
-    "rate_limit",
-    "secret",
-    "url",
-])
-
-settings.add_config({
-    "name": "path",
-    "value": "./watchguardian.db"
-})
-
-app = Server(settings=settings).run()
-```
-
-Depois:
-
-```bash
-uvicorn main:app --reload
-```
-
----
-
-## 16. Resumo das variáveis
-
-| Nome | Necessária para | Obrigatória |
-| --- | --- | --- |
-| `host` | Redis / cache / rate limit | Sim |
-| `port` | Redis / cache / rate limit | Sim |
-| `password` | Redis autenticado | Não |
-| `origin` | CORS | Sim |
-| `rate_limit` | Middleware de rate limit | Sim |
-| `secret` | JWT, autenticação e refresh | Sim para auth |
-| `url` | Banco de dados externo | Não, possui fluxo de fallback |
-
-Config adicional:
-
-| Nome | Uso |
-| --- | --- |
-| `path` | Caminho usado pelo fallback de banco quando necessário |
-
----
-
-## 17. Observações sobre a implementação atual
-
-A documentação acima descreve a API e a intenção atual do módulo `server`.
-
-Ao alterar os nomes de headers, payloads JWT, variáveis de ambiente ou schemas, mantenha este arquivo atualizado para evitar que o código e a documentação desenvolvam carreiras independentes, tradição infelizmente comum em software.
+O banco não exige uma `url` externa. Sem `url`, o WatchGuardian usa o fallback SQLite descrito anteriormente.
