@@ -30,5 +30,17 @@ class Colors:
         return f"\033[37m{text}{Colors.RESET}"
 
     @staticmethod
+    def gray(text: str) -> str:
+        return f"\033[90m{text}{Colors.RESET}"
+
+    @staticmethod
     def bold(text: str) -> str:
         return f"\033[1m{text}{Colors.RESET}"
+
+    @staticmethod
+    def gold(text: str) -> str:
+        return f"\033[93m{text}{Colors.RESET}"
+
+    @staticmethod
+    def brown(text: str) -> str:
+        return f"\033[38;2;139;69;19m{text}{Colors.RESET}"

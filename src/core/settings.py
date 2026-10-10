@@ -41,42 +41,35 @@ class Settings:
 
             load_dotenv()
 
-    #Recebe uma lista de nome de variaveis de ambiente, e le, se for None, levanta erro, se não, adiciona em envs
-    def required_secrets(self, envs:list[str]) -> None:
+    
+    def required_secrets(self, secret:str) -> Any:
 
-        for name in envs:
+                
+                if not secret in self.secrets.keys() or self.secrets[secret] == "":
+                    raise SettingsNotFoundEnv(f"Not found env {secret}")
 
-            env = os.getenv(name)
+                return self.secrets[secret]
 
-            if env is None or env == "":
-
-                raise SettingsNotFoundEnv(f"Not found env {name}")
-
-            self.secrets[name] = env 
 
 
     #Adiciona uma variavel de ambiente sem verificar se é none
-    def add_secret(self, envs:str|list[str]) -> None:
+    def add_secret(self, secrets:str|list[str]) -> None:
 
-        if isinstance(envs, str):
+        if isinstance(secrets, str):
 
-            self.secrets[envs] = os.getenv(envs)
+            self.secrets[secrets] = os.getenv(secrets)
 
         else:
 
-            for name in envs:
+            for name in secrets:
 
                 self.secrets[name] = os.getenv(name)
 
 
     #Pega uma secret
     def get_secret(self, secret_name:str) -> Any:
-
-        if not secret_name in self.secrets.keys():
-
-            raise SettingsNotFoundEnv(f"Not found {secret_name}")
-
-        return self.secrets[secret_name]
+           
+        return self.secrets[secret_name] if secret_name in self.secrets.keys() else None
 
     
 
