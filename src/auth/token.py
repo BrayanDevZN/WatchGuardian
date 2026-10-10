@@ -5,6 +5,7 @@ logger = Logs(loglevel="SUCCESS")
 
 
 import jwt
+from jwt.exceptions import InvalidSignatureError
 
 class JWT:
 
@@ -51,7 +52,7 @@ class JWT:
 
             return payload
 
-        except Exception as error:
+        except InvalidSignatureError as error:
 
             logger.error(f"Erro ao decodificar token: {error}")
             raise
