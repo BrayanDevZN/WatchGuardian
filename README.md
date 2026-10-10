@@ -10,6 +10,7 @@
 O WatchGuardian reúne logging, observabilidade, banco de dados, cache, autenticação, cliente HTTP, CLI e um **servidor próprio de observabilidade** em uma API pública simples e reutilizável.
 
 [![PyPI](https://img.shields.io/pypi/v/watchguardian?style=for-the-badge&logo=pypi&logoColor=white&color=3775A9)](https://pypi.org/project/watchguardian/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![CI](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml/badge.svg?branch=main)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/build.yaml)
 [![Functional](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/server.yaml/badge.svg?branch=main)](https://github.com/BrayanDevZN/WatchGuardian/actions/workflows/server.yaml)
@@ -86,7 +87,8 @@ O framework pode ser usado de duas formas:
 - CLI própria com `watchguardian`;
 - testes unitários, de integração e funcionais;
 - CI automatizado com GitHub Actions;
-- distribuição pública via PyPI.
+- distribuição pública via PyPI;
+- projeto **open source** sob licença MIT, aberto a sugestões e contribuições via Pull Request.
 
 ---
 
@@ -578,6 +580,30 @@ O projeto também está preparado para fluxo de CI/CD com GitHub Actions e publi
 
 ---
 
+## Open source e contribuições
+
+O **WatchGuardian é open source** e o desenvolvimento é aberto à comunidade.
+
+Sugestões, melhorias, correções de bugs, documentação e novos recursos podem ser enviados por **Pull Request** no GitHub. Antes de abrir um PR, prefira manter a API pública compatível, adicionar ou atualizar testes quando necessário e garantir que os workflows de CI continuem passando.
+
+Fluxo recomendado para contribuir:
+
+1. faça um fork do repositório;
+2. crie uma branch para a alteração;
+3. implemente a mudança e execute os testes;
+4. faça push da branch;
+5. abra um Pull Request descrevendo o problema, a solução e o impacto da mudança.
+
+Issues também podem ser usadas para propor recursos, relatar bugs ou discutir mudanças antes da implementação.
+
+---
+
+## Licença
+
+O WatchGuardian é distribuído sob a **MIT License**. Isso permite usar, copiar, modificar, distribuir e incorporar o framework em projetos pessoais ou comerciais, respeitando os termos presentes no arquivo [`LICENSE`](LICENSE).
+
+---
+
 ## Estrutura do projeto
 
 ```text
@@ -606,6 +632,7 @@ WatchGuardian/
 │
 ├── .github/workflows/
 ├── assets/
+├── LICENSE
 ├── pyproject.toml
 └── README.md
 ```
@@ -650,6 +677,7 @@ Versão pública atual: **0.1.0**.
 - [x] Testes de integração
 - [x] Testes funcionais
 - [x] CI com GitHub Actions
+- [x] Open source sob licença MIT
 
 ---
 
@@ -659,6 +687,6 @@ Versão pública atual: **0.1.0**.
 
 **Observability for real projects.**
 
-Um framework Python para observar, controlar e conectar infraestrutura backend sem repetir o mesmo trabalho em cada aplicação.
+Um framework Python open source para observar, controlar e conectar infraestrutura backend sem repetir o mesmo trabalho em cada aplicação.
 
 </div>
