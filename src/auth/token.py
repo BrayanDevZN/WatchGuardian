@@ -28,6 +28,8 @@ class JWT:
 
             logger.success("Token criado com sucesso!!")
 
+            return token
+
         except Exception as error:
 
             logger.error(f"Erro ao gerar token: {error}")
