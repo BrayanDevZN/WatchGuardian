@@ -1,7 +1,8 @@
 "confere o rate limit"
 
 from starlette.middleware.base import BaseHTTPMiddleware
-from src.service.module import Settings, CacheManage
+from src.core.module import Settings
+from src.service.cache import CacheManage
 from fastapi import Request, HTTPException
 
 class Midlleware(BaseHTTPMiddleware):
@@ -38,15 +39,3 @@ class Midlleware(BaseHTTPMiddleware):
 
         
         await call_next(request)
-    
-
-    
-
-
-
-
-
-
-
-        
-       
