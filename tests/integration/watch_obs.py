@@ -121,10 +121,10 @@ async def test_watch_obs() -> None:
     print(result)
 
     # =========================================================
-    # CHECK SUCCESS
+    # CHECK RESULTS
     # =========================================================
 
-    print("\n=== CHECK SUCCESS ===")
+    print("\n=== CHECK RESULTS ===")
 
     data = await watch_db.observability.select()
 
@@ -148,6 +148,16 @@ async def test_watch_obs() -> None:
         print(
             "LATENCY:",
             item.get("latency")
+        )
+
+        print(
+            "CREATED_AT:",
+            item.get("created_at")
+        )
+
+        print(
+            "UPDATE_AT:",
+            item.get("update_at")
         )
 
         print("-" * 50)

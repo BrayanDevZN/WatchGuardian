@@ -81,8 +81,10 @@ async def test_db() -> None:
     print("\n=== CREATE OBSERVABILITY ===")
 
     observability_created = await control_db.observability.create(
+        task="test_task",
         status="pending",
-        content="Processando tarefa de teste"
+        content="Processando tarefa de teste",
+        latency=0
     )
 
     print(observability_created)
@@ -142,8 +144,10 @@ async def test_db() -> None:
     )
 
     await control_db.observability.create(
+        task="reset_test",
         status="pending",
-        content="Essa operação será apagada pelo reset"
+        content="Essa operação será apagada pelo reset",
+        latency=0
     )
 
     print("\nLogs antes do reset:")

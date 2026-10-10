@@ -36,46 +36,22 @@ async def test_watch_logs() -> None:
     )
 
     print("\n=== DEBUG ===")
-    print(
-        logs_without_db.debug(
-            "Teste debug sem banco"
-        )
-    )
+    print(logs_without_db.debug("Teste debug sem banco"))
 
     print("\n=== INFO ===")
-    print(
-        logs_without_db.info(
-            "Teste info sem banco"
-        )
-    )
+    print(logs_without_db.info("Teste info sem banco"))
 
     print("\n=== SUCCESS ===")
-    print(
-        logs_without_db.success(
-            "Teste success sem banco"
-        )
-    )
+    print(logs_without_db.success("Teste success sem banco"))
 
     print("\n=== WARNING ===")
-    print(
-        logs_without_db.warning(
-            "Teste warning sem banco"
-        )
-    )
+    print(logs_without_db.warning("Teste warning sem banco"))
 
     print("\n=== ERROR ===")
-    print(
-        logs_without_db.error(
-            "Teste error sem banco"
-        )
-    )
+    print(logs_without_db.error("Teste error sem banco"))
 
     print("\n=== CRITICAL ===")
-    print(
-        logs_without_db.critical(
-            "Teste critical sem banco"
-        )
-    )
+    print(logs_without_db.critical("Teste critical sem banco"))
 
     # =========================================================
     # WATCHDB
@@ -87,7 +63,6 @@ async def test_watch_logs() -> None:
         settings=settings
     )
 
-    # Limpa dados antigos antes do teste
     await watch_db.reset_tables()
 
     # =========================================================
@@ -102,52 +77,22 @@ async def test_watch_logs() -> None:
     )
 
     print("\n=== DEBUG ===")
-
-    result = logs.debug(
-        "Teste debug com banco"
-    )
-
-    print(result)
+    print(logs.debug("Teste debug com banco"))
 
     print("\n=== INFO ===")
-
-    result = logs.info(
-        "Teste info com banco"
-    )
-
-    print(result)
+    print(logs.info("Teste info com banco"))
 
     print("\n=== SUCCESS ===")
-
-    result = logs.success(
-        "Teste success com banco"
-    )
-
-    print(result)
+    print(logs.success("Teste success com banco"))
 
     print("\n=== WARNING ===")
-
-    result = logs.warning(
-        "Teste warning com banco"
-    )
-
-    print(result)
+    print(logs.warning("Teste warning com banco"))
 
     print("\n=== ERROR ===")
-
-    result = logs.error(
-        "Teste error com banco"
-    )
-
-    print(result)
+    print(logs.error("Teste error com banco"))
 
     print("\n=== CRITICAL ===")
-
-    result = logs.critical(
-        "Teste critical com banco"
-    )
-
-    print(result)
+    print(logs.critical("Teste critical com banco"))
 
     # =========================================================
     # ESPERA BACKGROUND TASKS
@@ -156,9 +101,7 @@ async def test_watch_logs() -> None:
     print("\n=== WAIT BACKGROUND TASKS ===")
 
     if logs._tasks:
-        await asyncio.gather(
-            *logs._tasks
-        )
+        await asyncio.gather(*logs._tasks)
 
     # =========================================================
     # SELECT LOGS
@@ -182,41 +125,49 @@ async def test_watch_logs() -> None:
     )
 
     print("\nDEBUG SHOULD NOT RUN:")
-
-    result = warning_logs.debug(
-        "Esse debug não deveria aparecer"
+    print(
+        warning_logs.debug(
+            "Esse debug não deveria aparecer"
+        )
     )
-
-    print(result)
 
     print("\nINFO SHOULD NOT RUN:")
-
-    result = warning_logs.info(
-        "Esse info não deveria aparecer"
+    print(
+        warning_logs.info(
+            "Esse info não deveria aparecer"
+        )
     )
 
-    print(result)
+    print("\nSUCCESS SHOULD NOT RUN:")
+    print(
+        warning_logs.success(
+            "Esse success não deveria aparecer"
+        )
+    )
 
     print("\nWARNING SHOULD RUN:")
-
-    result = warning_logs.warning(
-        "Esse warning deve aparecer"
+    print(
+        warning_logs.warning(
+            "Esse warning deve aparecer"
+        )
     )
-
-    print(result)
 
     print("\nERROR SHOULD RUN:")
-
-    result = warning_logs.error(
-        "Esse error deve aparecer"
+    print(
+        warning_logs.error(
+            "Esse error deve aparecer"
+        )
     )
 
-    print(result)
+    print("\nCRITICAL SHOULD RUN:")
+    print(
+        warning_logs.critical(
+            "Esse critical deve aparecer"
+        )
+    )
 
     if warning_logs._tasks:
-        await asyncio.gather(
-            *warning_logs._tasks
-        )
+        await asyncio.gather(*warning_logs._tasks)
 
     # =========================================================
     # SELECT AFTER LOGLEVEL
