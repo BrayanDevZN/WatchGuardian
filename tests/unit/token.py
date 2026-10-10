@@ -3,7 +3,7 @@ Teste de WatchAuth.
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import os
 
 from src.service.module import Settings, WatchAuth
@@ -32,17 +32,15 @@ async def test_token() -> None:
         settings=settings
     )
 
-    exp = datetime.now(timezone.utc) + timedelta(hours=1)
-
     print("\n=== USER TOKEN ===")
 
-    token = await watch_auth.user_token(
-        exp=exp
-    )
+    before = datetime.now(timezone.utc).timestamp()
+    token = await watch_auth.user_token()
+    after = datetime.now(timezone.utc).timestamp()
 
     print(token)
 
-    print("\n=== DECODE ===")
+    print("\n=== DECODE USER TOKEN ===")
 
     decoded = await watch_auth.decode(
         token=token
@@ -51,8 +49,26 @@ async def test_token() -> None:
     print(decoded)
 
     assert decoded["type"] == "user_token"
-    assert decoded["exp"] == int(exp.timestamp())
+    assert before + 3600 <= decoded["exp"] <= after + 3600
     assert set(decoded.keys()) == {"exp", "type"}
+
+    print("\n=== REFRESH TOKEN ===")
+
+    refresh_token = await watch_auth.refresh_token()
+
+    print(refresh_token)
+
+    print("\n=== DECODE REFRESH TOKEN ===")
+
+    decoded_refresh = await watch_auth.decode(
+        token=refresh_token
+    )
+
+    print(decoded_refresh)
+
+    assert decoded_refresh == {
+        "type": "refresh_token"
+    }
 
     print("\n=== TESTE FINALIZADO ===")
 
