@@ -1,21 +1,36 @@
-"""junta todos os comandos cli"""
+"""
+Junta todos os comandos CLI
+"""
 
-from .migrate import migrate
-import argparse 
+from .migrate import migrate, run_migrate
+
+import argparse
 import asyncio
 
-async def main() -> None:
 
-    commands = [
-        migrate
-    ]
+async def run() -> None:
 
     parser = argparse.ArgumentParser()
 
+    modules = parser.add_subparsers(
+        dest="module",
+        required=True
+    )
+
+    commands = [
+        migrate,
+    ]
+
     for command in commands:
+        command(modules)
 
-        await command(subparser=parser)
+    args = parser.parse_args()
+
+    if args.module == "migrate":
+        await run_migrate(args)
 
 
+def main() -> None:
+    asyncio.run(run())
 
-asyncio.run(main())
+main()
