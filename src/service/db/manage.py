@@ -14,7 +14,7 @@ class WatchDb(ControlDb, MergeDb):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-        url = settings.required_secrets(secret="url")
+        url = settings.get_secret(secret_name="url")
         path = settings.get_config(name="path")
         url = config_url(url=url, path=path)
 
