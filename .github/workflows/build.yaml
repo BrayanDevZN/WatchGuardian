@@ -42,6 +42,7 @@ jobs:
                 python -m tests.unit.logs
                 python -m tests.unit.cache
                 python -m tests.unit.token
+                python -m tests.unit.cmd
 
             - name: integration
               run:
