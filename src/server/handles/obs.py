@@ -2,6 +2,7 @@
 from src.auth.token import logger
 from src.service.db import WatchDb
 from fastapi import APIRouter, Request, Depends
+from fastapi.encoders import jsonable_encoder
 from src.server.depends import depends_user
 from src.server.schema.obs import CreateObs, UpdateObs
 from fastapi.responses import JSONResponse
@@ -28,7 +29,7 @@ async def create_obs(obs: CreateObs, request: Request, user: str | None = Depend
 
     logger.success("Observabilidade registrada!!")
 
-    return JSONResponse(status_code=201, content=result)
+    return JSONResponse(status_code=201, content=jsonable_encoder(result))
 
 
 # Rota pra ler observabilidade
@@ -51,7 +52,7 @@ async def get_obs(
         id=id
     )
 
-    return JSONResponse(status_code=201, content=result)
+    return JSONResponse(status_code=201, content=jsonable_encoder(result))
 
 
 # Rota pra atualizar observabilidade
@@ -79,7 +80,7 @@ async def update_obs(
         latency=obs.latency
     )
 
-    return JSONResponse(status_code=201, content=result)
+    return JSONResponse(status_code=201, content=jsonable_encoder(result))
 
 
 # Rota pra deletar observabilidade
