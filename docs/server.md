@@ -71,11 +71,11 @@ settings.add_secret([
 ```python
 settings.add_secret([
     "password",
-    "url",
+    "url_db",
 ])
 ```
 
-`password` e `url` podem ficar `None`.
+`password` e `url_db` podem ficar `None`.
 
 ### Config opcional `path`
 
@@ -88,7 +88,7 @@ settings.add_config({
 })
 ```
 
-O `path` é opcional e só participa da configuração do banco quando `url` não foi fornecida.
+O `path` é opcional e só participa da configuração do banco quando `url_db` não foi fornecida.
 
 ---
 
@@ -204,49 +204,49 @@ O comando apenas imprime a secret. Ele não salva automaticamente no `.env`.
 
 ---
 
-### 3.7 `url`
+### 3.7 `url_db`
 
 **Obrigatória:** não.
 
-A `url` define explicitamente qual banco será usado.
+A `url_db` define explicitamente qual banco será usado.
 
 Exemplo PostgreSQL:
 
 ```env
-url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
+url_db=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
 ```
 
 Exemplo SQLite explícito:
 
 ```env
-url=sqlite+aiosqlite:///./watchguardian.db
+url_db=sqlite+aiosqlite:///./watchguardian.db
 ```
 
-O `WatchDb` usa:
+O `WatchDb` lê a variável assim:
 
 ```python
-url = settings.get_secret(secret_name="url")
+url = settings.get_secret(secret_name="url_db")
 ```
 
-Portanto, `url=None` é válido.
+Portanto, `url_db=None` é válido.
 
 A prioridade do banco é:
 
 ```text
-url definida
+url_db definida
     ↓
-usa exatamente a url informada
+usa exatamente a URL informada
 
-url None + path definido
+url_db None + path definido
     ↓
 usa SQLite em <path>/watch.db
 
-url None + path None
+url_db None + path None
     ↓
 usa sqlite+aiosqlite:///watch.db
 ```
 
-Ou seja, o projeto funciona sem uma variável `url`.
+Ou seja, o projeto funciona sem a variável `url_db`.
 
 ---
 
@@ -256,7 +256,7 @@ Ou seja, o projeto funciona sem uma variável `url`.
 
 **Tipo:** config interna de `Settings`, não secret/env no fluxo atual.
 
-É usada somente como fallback do SQLite quando `url` é `None`.
+É usada somente como fallback do SQLite quando `url_db` é `None`.
 
 Exemplo:
 
@@ -281,15 +281,6 @@ Exemplo:
 mkdir -p data
 ```
 
-Depois:
-
-```python
-settings.add_config({
-    "name": "path",
-    "value": "./data"
-})
-```
-
 Não passe o nome do arquivo SQLite em `path`. O próprio `config_url()` acrescenta `watch.db` ao caminho.
 
 Correto:
@@ -304,9 +295,9 @@ Resultado:
 ./data/watch.db
 ```
 
-Se `url` estiver definida, `path` é ignorado.
+Se `url_db` estiver definida, `path` é ignorado.
 
-Se nem `url` nem `path` forem definidos, o fallback é:
+Se nem `url_db` nem `path` forem definidos, o fallback é:
 
 ```text
 sqlite+aiosqlite:///watch.db
@@ -324,14 +315,14 @@ sqlite+aiosqlite:///watch.db
 | `origin` | env/secret | Sim | CORS | erro em `required_secrets()` |
 | `rate_limit` | env/secret | Sim para rate limit | middleware | erro quando o middleware tenta ler o limite |
 | `secret` | env/secret | Sim para auth | JWT / rotas protegidas / refresh | autenticação não consegue funcionar corretamente |
-| `url` | env/secret | Não | banco | usa fallback SQLite |
+| `url_db` | env/secret | Não | banco | usa fallback SQLite |
 | `path` | config | Não | fallback SQLite | usa `sqlite+aiosqlite:///watch.db` |
 
 ### Prioridade do banco
 
-| `url` | `path` | Banco usado |
+| `url_db` | `path` | Banco usado |
 | --- | --- | --- |
-| definida | qualquer valor | usa `url` |
+| definida | qualquer valor | usa `url_db` |
 | `None` | diretório existente | `<path>/watch.db` |
 | `None` | `None` | `watch.db` na raiz de execução |
 
@@ -358,10 +349,10 @@ password=minha-senha
 Banco externo opcional:
 
 ```env
-url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
+url_db=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
 ```
 
-Se `url` não existir, isso não é erro. O sistema pode usar SQLite.
+Se `url_db` não existir, isso não é erro. O sistema pode usar SQLite.
 
 ---
 
@@ -382,15 +373,15 @@ settings.add_secret([
     "origin",
     "rate_limit",
     "secret",
-    "url",
+    "url_db",
 ])
 
 app = Server(settings=settings).run()
 ```
 
-Mesmo registrando `url`, ela pode estar ausente no ambiente. Nesse caso `get_secret("url")` retorna `None` e o banco cai no fallback.
+Mesmo registrando `url_db`, ela pode estar ausente no ambiente. Nesse caso `get_secret("url_db")` retorna `None` e o banco cai no fallback.
 
-Sem `url` e sem `path`, o banco será:
+Sem `url_db` e sem `path`, o banco será:
 
 ```text
 sqlite+aiosqlite:///watch.db
@@ -411,7 +402,7 @@ settings.add_secret([
     "origin",
     "rate_limit",
     "secret",
-    "url",
+    "url_db",
 ])
 
 settings.add_config({
@@ -422,7 +413,7 @@ settings.add_config({
 app = Server(settings=settings).run()
 ```
 
-Nesse exemplo, se `url` for `None`, o banco será criado/usado em:
+Nesse exemplo, se `url_db` for `None`, o banco será criado/usado em:
 
 ```text
 ./data/watch.db
@@ -432,13 +423,13 @@ O diretório `./data` precisa existir antes.
 
 ### 6.3 Usando banco externo
 
-Basta definir `url`:
+Basta definir `url_db`:
 
 ```env
-url=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
+url_db=postgresql+asyncpg://usuario:senha@localhost:5432/watchguardian
 ```
 
-Quando `url` existe, ela tem prioridade e `path` não interfere.
+Quando `url_db` existe, ela tem prioridade e `path` não interfere.
 
 ---
 
@@ -780,4 +771,4 @@ update
 delete
 ```
 
-O banco não exige uma `url` externa. Sem `url`, o WatchGuardian usa o fallback SQLite descrito anteriormente.
+O banco não exige uma `url_db` externa. Sem `url_db`, o WatchGuardian usa o fallback SQLite descrito anteriormente.
