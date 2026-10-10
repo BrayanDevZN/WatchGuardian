@@ -2,8 +2,8 @@
 "rota de logs"
 from src.service.module import logger, WatchDb
 from fastapi import APIRouter, HTTPException, Request, Depends
-from src.controller.depends import depends_user
-from src.controller.schema.logs import CreateLog, UpdateLog
+from src.server.depends import depends_user
+from src.server.schema.logs import CreateLog, UpdateLog
 from fastapi.responses import JSONResponse
 logs_router = APIRouter(prefix="/logs", tags=["logs"])
 
