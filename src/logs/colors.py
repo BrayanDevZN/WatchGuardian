@@ -30,6 +30,10 @@ class Colors:
         return f"\033[37m{text}{Colors.RESET}"
 
     @staticmethod
+    def highlighted_white(text: str) -> str:
+        return f"\033[1;97m{text}{Colors.RESET}"
+
+    @staticmethod
     def gray(text: str) -> str:
         return f"\033[90m{text}{Colors.RESET}"
 
@@ -44,3 +48,7 @@ class Colors:
     @staticmethod
     def brown(text: str) -> str:
         return f"\033[38;2;139;69;19m{text}{Colors.RESET}"
+
+    @staticmethod
+    def light_pink(text: str) -> str:
+        return f"\033[38;2;255;182;193m{text}{Colors.RESET}"
