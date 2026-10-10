@@ -3,13 +3,12 @@ API publica reutilizavel do WatchGuardian.
 """
 
 from src.core.module import Settings
-from auth.token import JWT
+from src.auth.token import JWT
 from src.service.cache import CacheManage
 from src.service.db import WatchDb
 from src.service.logs import WatchLogs
 from src.service.obs.manage import WatchObs
-from src.logs.module import Logs
-from .token import WatchToken
+from .token import WatchAuth
 
 
 __all__ = [
@@ -19,5 +18,5 @@ __all__ = [
     "WatchDb",
     "WatchLogs",
     "WatchObs",
-    "WatchToken"
+    "WatchAuth"
 ]
