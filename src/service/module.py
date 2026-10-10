@@ -10,6 +10,7 @@ from src.service.logs import WatchLogs
 from src.service.obs.manage import WatchObs
 from src.util.cmd import Cmd
 from .client import ClientHttp
+from .server import WatchServer
 from .token import WatchAuth, logger
 
 
@@ -22,5 +23,6 @@ __all__ = [
     "WatchObs",
     "WatchAuth",
     "ClientHttp",
+    "WatchServer",
     "Cmd"
 ]
