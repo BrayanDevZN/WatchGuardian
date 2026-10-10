@@ -5,14 +5,12 @@ import asyncio
 from src.service.module import ClientHttp, Settings, WatchAuth
 
 
-ENV_FILE = ".env"
+TEST_SECRET = "watchguardian-functional-test-secret-2026"
 
 
 async def test_client() -> None:
-    settings = Settings(env_file=ENV_FILE)
-
-    settings.add_secret("secret")
-    settings.required_secrets("secret")
+    settings = Settings()
+    settings.secrets["secret"] = TEST_SECRET
 
     auth = WatchAuth(settings=settings)
 
