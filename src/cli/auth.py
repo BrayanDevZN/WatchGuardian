@@ -52,6 +52,7 @@ async def run_auth(args) -> None:
 
     elif args.command == "token":
         settings.add_secret("secret")
+        settings.required_secrets("secret")
 
         watch_auth = WatchAuth(
             settings=settings
