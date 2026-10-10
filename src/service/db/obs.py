@@ -1,5 +1,5 @@
 """
-Controla a tabela de observabilidade com cache-aside opcional.
+Controla observabilidade com cache-aside opcional usando banco local ou cliente HTTP.
 """
 
 import json
@@ -8,14 +8,25 @@ from typing import Any
 
 from src.database.manage import ControlDb
 from src.service.cache import CacheManage
+from src.service.client import ClientHttp
 
 
 class ObsService:
 
-    def __init__(self, control_db: ControlDb, cache: CacheManage | None = None) -> None:
-        self.control_db = control_db
+    def __init__(
+        self,
+        control: ControlDb | ClientHttp,
+        cache: CacheManage | None = None,
+    ) -> None:
+        self.control = control
         self.cache = cache
-        self.db = control_db.observability
+        self.http = isinstance(control, ClientHttp)
+
+        if self.http:
+            token = control.settings.required_secrets("token")
+            self.db = control.obs(token=token)
+        else:
+            self.db = control.observability
 
     @staticmethod
     def _serialize(data: Any) -> dict:
@@ -65,15 +76,23 @@ class ObsService:
         latency: int | float,
         public_id: uuid.UUID | None = None,
     ) -> dict:
-        data = await self.db.create(
-            task=task,
-            status=status,
-            content=content,
-            latency=latency,
-            public_id=public_id,
-        )
+        if self.http:
+            data = await self.db.create_obs(
+                task=task,
+                status=status,
+                content=content,
+                latency=latency,
+            )
+        else:
+            data = await self.db.create(
+                task=task,
+                status=status,
+                content=content,
+                latency=latency,
+                public_id=public_id,
+            )
 
-        if self.cache is not None:
+        if self.cache is not None and data is not None:
             await self.cache.delete("watchguardian:observability:all")
             await self._save_cache(self._key(id=data["id"]), data)
             await self._save_cache(self._key(public_id=data["public_id"]), data)
@@ -94,7 +113,10 @@ class ObsService:
             if cached_data is not None:
                 return cached_data
 
-        data = await self.db.select(id=id, public_id=public_id)
+        if self.http:
+            data = await self.db.get_obs(id=id, public_id=public_id)
+        else:
+            data = await self.db.select(id=id, public_id=public_id)
 
         if self.cache is not None and data is not None:
             await self._save_cache(key, data)
@@ -110,14 +132,24 @@ class ObsService:
         content: str | None = None,
         latency: int | float | None = None,
     ) -> dict | None:
-        data = await self.db.update(
-            id=id,
-            public_id=public_id,
-            task=task,
-            status=status,
-            content=content,
-            latency=latency,
-        )
+        if self.http:
+            data = await self.db.update_obs(
+                id=id,
+                public_id=public_id,
+                task=task,
+                status=status,
+                content=content,
+                latency=latency,
+            )
+        else:
+            data = await self.db.update(
+                id=id,
+                public_id=public_id,
+                task=task,
+                status=status,
+                content=content,
+                latency=latency,
+            )
 
         if data is not None:
             await self._delete_cache(
@@ -132,7 +164,10 @@ class ObsService:
         id: int | None = None,
         public_id: uuid.UUID | str | None = None,
     ) -> dict | None:
-        data = await self.db.delete(id=id, public_id=public_id)
+        if self.http:
+            data = await self.db.delete_obs(id=id, public_id=public_id)
+        else:
+            data = await self.db.delete(id=id, public_id=public_id)
 
         if data is not None:
             await self._delete_cache(
