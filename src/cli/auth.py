@@ -48,7 +48,7 @@ async def run_auth(args) -> None:
         secret = watch_auth.secret()
 
         logger.success(
-            f"Secret: {secret}"
+            f"Secret: {logger.highlighted_white(secret)}"
         )
 
     elif args.command == "token":
@@ -84,5 +84,5 @@ async def run_auth(args) -> None:
             )
 
         logger.success(
-            f"Token: {token}"
+            f"Token: {logger.highlighted_white(token)}"
         )
