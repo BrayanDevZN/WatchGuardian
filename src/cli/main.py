@@ -43,4 +43,6 @@ async def run() -> None:
 def main() -> None:
     asyncio.run(run())
 
-main()
+
+if __name__ == "__main__":
+    main()
