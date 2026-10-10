@@ -1,5 +1,5 @@
 """
-Controla a tabela de logs com cache-aside opcional.
+Controla logs com cache-aside opcional usando banco local ou cliente HTTP.
 """
 
 import json
@@ -8,14 +8,25 @@ from typing import Any
 
 from src.database.manage import ControlDb
 from src.service.cache import CacheManage
+from src.service.client import ClientHttp
 
 
 class LogsService:
 
-    def __init__(self, control_db: ControlDb, cache: CacheManage | None = None) -> None:
-        self.control_db = control_db
+    def __init__(
+        self,
+        control: ControlDb | ClientHttp,
+        cache: CacheManage | None = None,
+    ) -> None:
+        self.control = control
         self.cache = cache
-        self.db = control_db.logs
+        self.http = isinstance(control, ClientHttp)
+
+        if self.http:
+            token = control.settings.required_secrets("token")
+            self.db = control.logs(token=token)
+        else:
+            self.db = control.logs
 
     @staticmethod
     def _serialize(data: Any) -> dict:
@@ -58,9 +69,12 @@ class LogsService:
             await self.cache.delete(self._key(public_id=public_id))
 
     async def create(self, log: str, status: str) -> dict:
-        data = await self.db.create(log=log, status=status)
+        if self.http:
+            data = await self.db.create_log(log=log, status=status)
+        else:
+            data = await self.db.create(log=log, status=status)
 
-        if self.cache is not None:
+        if self.cache is not None and data is not None:
             await self.cache.delete("watchguardian:logs:all")
             await self._save_cache(self._key(id=data["id"]), data)
             await self._save_cache(self._key(public_id=data["public_id"]), data)
@@ -81,7 +95,10 @@ class LogsService:
             if cached_data is not None:
                 return cached_data
 
-        data = await self.db.select(id=id, public_id=public_id)
+        if self.http:
+            data = await self.db.get_log(id=id, public_id=public_id)
+        else:
+            data = await self.db.select(id=id, public_id=public_id)
 
         if self.cache is not None and data is not None:
             await self._save_cache(key, data)
@@ -95,12 +112,20 @@ class LogsService:
         log: str | None = None,
         status: str | None = None,
     ) -> dict | None:
-        data = await self.db.update(
-            id=id,
-            public_id=public_id,
-            log=log,
-            status=status,
-        )
+        if self.http:
+            data = await self.db.update_log(
+                id=id,
+                public_id=public_id,
+                log=log,
+                status=status,
+            )
+        else:
+            data = await self.db.update(
+                id=id,
+                public_id=public_id,
+                log=log,
+                status=status,
+            )
 
         if data is not None:
             await self._delete_cache(
@@ -115,7 +140,10 @@ class LogsService:
         id: int | None = None,
         public_id: uuid.UUID | str | None = None,
     ) -> dict | None:
-        data = await self.db.delete(id=id, public_id=public_id)
+        if self.http:
+            data = await self.db.delete_log(id=id, public_id=public_id)
+        else:
+            data = await self.db.delete(id=id, public_id=public_id)
 
         if data is not None:
             await self._delete_cache(
