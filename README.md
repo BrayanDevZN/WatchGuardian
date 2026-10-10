@@ -30,6 +30,8 @@ Framework Python modular para observabilidade, logging, banco de dados, cache, a
 
 O **WatchGuardian** foi criado para concentrar recursos comuns de backend em uma única base reutilizável. Em vez de repetir configuração de logs, observabilidade, cache, autenticação, banco e servidor em cada projeto, o framework fornece módulos prontos e uma API pública simples.
 
+Além de funcionar como biblioteca embutida na aplicação, o WatchGuardian também pode **montar um servidor próprio dedicado à observabilidade**. Esse servidor expõe rotas para logs, observabilidade e autenticação, permitindo que múltiplas aplicações enviem, consultem e centralizem dados operacionais em uma única instância WatchGuardian.
+
 A interface pública fica em `WatchGuardian/`, enquanto a implementação interna permanece organizada em `src/`.
 
 ```python
@@ -46,10 +48,38 @@ from WatchGuardian.server import ClientHttp, WatchServer
 - PostgreSQL assíncrono e fallback SQLite;
 - Redis para cache, contadores, hashes e Pub/Sub;
 - autenticação JWT com `user_token` e `refresh_token`;
+- **servidor próprio de observabilidade** baseado em FastAPI;
 - servidor FastAPI pronto com CORS, rate limit e rotas internas;
-- cliente HTTP para conversar com uma instância WatchGuardian;
+- cliente HTTP para outras aplicações enviarem e consultarem dados na instância WatchGuardian;
 - CLI própria com o comando `watchguardian`;
 - arquitetura modular, separando API pública e implementação interna.
+
+---
+
+## Servidor próprio de observabilidade
+
+O WatchGuardian pode ser usado como uma camada central de observabilidade da sua infraestrutura.
+
+Em vez de cada aplicação armazenar e consultar seus próprios logs isoladamente, você pode subir uma instância WatchGuardian como serviço separado e fazer seus projetos conversarem com ela via HTTP.
+
+```text
+Aplicação A ─┐
+Aplicação B ─┼──> WatchGuardian Server ───> Logs / Observabilidade / Banco / Redis
+Aplicação C ─┘
+```
+
+Isso permite centralizar:
+
+- logs de múltiplos serviços;
+- status de tarefas;
+- latência e falhas;
+- eventos de observabilidade;
+- autenticação das requisições;
+- consulta remota via `ClientHttp`;
+- persistência em PostgreSQL ou SQLite;
+- cache e rate limit com Redis.
+
+O objetivo é permitir que o WatchGuardian seja tanto uma biblioteca interna quanto um **serviço de observabilidade independente**.
 
 ---
 
@@ -73,6 +103,12 @@ flowchart TD
 
     E --> L[ClientHttp]
     E --> M[WatchServer]
+
+    M --> V[Servidor próprio de observabilidade]
+    L --> V
+    V --> W[Logs]
+    V --> X[Observabilidade]
+    V --> Y[Autenticação]
 
     F --> N[src/core]
     G --> O[src/logs + src/service]
@@ -403,6 +439,8 @@ Cliente HTTP para conversar com uma API WatchGuardian.
 
 Por padrão usa `http://localhost:8000`. Também pode ler a variável de ambiente `url`.
 
+Esse módulo é a ponte entre aplicações externas e o servidor próprio de observabilidade do WatchGuardian.
+
 ```python
 from WatchGuardian import Settings
 from WatchGuardian.server import ClientHttp
@@ -440,7 +478,11 @@ result = await client.auth(
 
 ## `WatchServer`
 
-Cria uma aplicação FastAPI com as rotas do WatchGuardian, CORS, rate limit e integração com Redis.
+O `WatchServer` monta o **servidor próprio de observabilidade do WatchGuardian**.
+
+Ele cria uma aplicação FastAPI pronta para receber, persistir e consultar dados operacionais, com rotas de logs, observabilidade e autenticação, além de CORS, rate limit e integração com Redis.
+
+Isso permite rodar o WatchGuardian como um serviço separado da aplicação principal e centralizar a observabilidade de múltiplos projetos.
 
 ```python
 from WatchGuardian import Settings
@@ -465,6 +507,8 @@ A variável `app` retornada é um objeto FastAPI e pode ser iniciada com Uvicorn
 ```bash
 uvicorn main:app --reload
 ```
+
+Depois, outras aplicações podem acessar essa instância usando `ClientHttp`.
 
 ---
 
@@ -687,6 +731,7 @@ O WatchGuardian está em desenvolvimento ativo e atualmente está na versão `0.
 - [x] Redis
 - [x] HTTP Client
 - [x] FastAPI Server
+- [x] Servidor próprio de observabilidade
 - [x] CLI
 - [x] Pacote instalável via `pyproject.toml`
 
@@ -727,6 +772,6 @@ GitHub: [BrayanDevZN/WatchGuardian](https://github.com/BrayanDevZN/WatchGuardian
 
 **Observability for real projects.**
 
-Feito para transformar infraestrutura repetitiva em módulos reutilizáveis.
+Feito para transformar infraestrutura repetitiva em módulos reutilizáveis e centralizar a observabilidade em um servidor próprio quando necessário.
 
 </div>
