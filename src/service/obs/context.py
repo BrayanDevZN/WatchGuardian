@@ -12,7 +12,7 @@ class ObsContext(ObsControl):
         self.name = name
 
 
-    async def __aenter__(self)-> ObsContext:
+    async def __aenter__(self)-> "ObsContext":
 
         await self.task(name=self.name)
 

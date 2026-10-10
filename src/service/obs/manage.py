@@ -12,7 +12,7 @@ class WatchObs(ObsControl):
 
 
     #metodo que retorna o gerenciador de contexto
-    def begin(self, name:str) -> ObsContext:
+    def begin(self, name:str) -> "ObsContext":
 
         return ObsContext(
             name=name,
