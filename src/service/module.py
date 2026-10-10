@@ -8,6 +8,7 @@ from src.service.cache import CacheManage
 from src.service.db import WatchDb
 from src.service.logs import WatchLogs
 from src.service.obs.manage import WatchObs
+from src.util.cmd import Cmd
 from .client import ClientHttp
 from .token import WatchAuth, logger
 
@@ -20,5 +21,6 @@ __all__ = [
     "WatchLogs",
     "WatchObs",
     "WatchAuth",
-    "ClientHttp"
+    "ClientHttp",
+    "Cmd"
 ]
