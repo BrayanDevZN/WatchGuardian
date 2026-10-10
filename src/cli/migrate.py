@@ -1,4 +1,4 @@
-from src.service.db import WatchDb, Settings
+from src.service.module import Settings, WatchDb
 import argparse
 
 
