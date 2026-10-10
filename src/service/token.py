@@ -21,7 +21,7 @@ class WatchAuth(JWT):
 
         logger.info("Gerando uma secret...")
 
-        secret = str(uuid.uuid4())
+        secret = f"{uuid.uuid4()}{uuid.uuid4()}"
 
         logger.success("Secret gerada com sucesso!!")
 
