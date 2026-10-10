@@ -6,8 +6,11 @@ from src.core.module import Settings
 
 class ClientHttp(Client):
 
-    def __init__(self, settings: Settings, url: str | None = None) -> None:
+    def __init__(self, settings: Settings) -> None:
         self.settings = settings
+
+        self.settings.add_secret("url")
+        url = self.settings.get_secret(secret_name="url")
 
         if url is None:
             url = "http://localhost:8000"
