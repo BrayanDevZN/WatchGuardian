@@ -3,11 +3,13 @@
 from src.service.module import Settings, WatchServer
 
 
+TEST_SECRET = "watchguardian-functional-test-secret-2026"
+
 settings = Settings()
 
 settings.secrets.update(
     {
-        "secret": "functional-test-secret",
+        "secret": TEST_SECRET,
         "origin": "*",
         "host": "127.0.0.1",
         "port": "6379",
