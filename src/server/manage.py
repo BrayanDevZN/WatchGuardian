@@ -3,6 +3,7 @@ from src.service.module import logger, Settings, CacheManage
 from .midlleware import Midlleware
 from .handles.logs import logs_router
 from .handles.obs import obs_router
+from .handles.auth import auth_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,7 +12,7 @@ class Server:
     def __init__(self, settings:Settings)-> None:
 
         self.app = FastAPI()
-        self.routes = [logs_router, obs_router]
+        self.routes = [logs_router, obs_router, auth_router]
 
         self.app.state.settings = settings
 
