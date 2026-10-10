@@ -40,7 +40,7 @@ class Logs(Colors):
 
     
     def _format(self,text: str, level: str, time: datetime.datetime) -> str:
-        return f"{self.gray(level)} | {self.brown(__name__)} | {self.gold(str(time))} | {text}"
+        return f"[{self.gray(level)}] => {self.brown(__name__)} | {self.gold(str(time))} | {text}"
 
     def _can_log(self, level: str) -> bool:
 

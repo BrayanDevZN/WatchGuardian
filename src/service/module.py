@@ -8,6 +8,7 @@ from src.service.cache import CacheManage
 from src.service.db import WatchDb
 from src.service.logs import WatchLogs
 from src.service.obs.manage import WatchObs
+from src.logs.module import Logs
 
 
 __all__ = [
