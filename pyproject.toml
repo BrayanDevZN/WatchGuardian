@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Observability, logging, database, authentication and server utilities for Python applications."
 readme = "README.md"
 requires-python = ">=3.12"
+license = { file = "LICENSE" }
 authors = [
     { name = "Brayan de Souza Dias Vaz" }
 ]
