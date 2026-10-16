@@ -11,7 +11,7 @@ class MethodError(Exception):
 
 class Replicator(ClientHttp):
 
-    def __init__(self,url:str, cache:CacheManage,limit:int,name:str, paths:str|list="*", methods:str|list="*", limit_expires=int=60)->None:
+    def __init__(self,url:str, cache:CacheManage,limit:int,name:str, paths:str|list="*", methods:str|list="*", limit_expires:int=60)->None:
 
      
         self.cache = cache
