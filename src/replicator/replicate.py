@@ -23,6 +23,7 @@ class Replicator(ClientHttp):
         self.url = url
         
         super().__init__(url=self.url)
+        
 
     #Adiciona o limite
     async def _limit(self) -> None:
@@ -64,23 +65,41 @@ class Replicator(ClientHttp):
                 raise MethodError(f"not expeted method {method}")
 
 
-    #chama os dois metodos de validação
-    async def _valid(self) -> None:
-        await self._valid_paths()
-        await self._valid_methods()
-
+    
 
     #Confere se o limite excedeu, se sim, retorna false, se não, conta na chave e retorna True
-    async def _exceded(self) -> bool:
+    async def _exceded(self) -> None:
 
         limit = await self._get()
 
         if limit is not None and int(limit) > self.limit:
 
             logger.warning(f"Exceded limit for instance {self.name}")
-            return False 
+            self.exceded = False
 
-        return True
+
+        self.exceded = True
+
+    #Confere a api
+    async def _health(self) -> None:
+
+        self.status = await self.health()
+
+    
+
+    #chama todos os metodos
+    async def valid(self) ->bool:
+        await self._valid_paths()
+        await self._valid_methods()
+        await self._exceded()
+        await self._health()
+        
+        return self.exceded and self.status
+
+
+
+
+    
 
 
 

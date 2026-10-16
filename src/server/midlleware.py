@@ -26,8 +26,8 @@ class Midlleware(BaseHTTPMiddleware):
 
         
 
-        if ((isinstance(self.origin, list) and user_limit is not None and user_limit > rate_limit and not origin_url in self.origin)or
-            (isinstance(self.origin, str) and user_limit is not None and user_limit > rate_limit and origin_url != self.origin)
+        if ((isinstance(self.origin, list) and user_limit is not None and int(user_limit) > rate_limit and not origin_url in self.origin)or
+            (isinstance(self.origin, str) and user_limit is not None and int(user_limit) > rate_limit and origin_url != self.origin)
             ):
 
             raise HTTPException(

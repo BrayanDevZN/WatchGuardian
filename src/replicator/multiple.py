@@ -17,6 +17,9 @@ class Replicators:
         limit = settings.get_config("replicator_limit")
         self.limit = int(limit) if limit else 60
         self.cache = CacheManage(settings=settings)
+        expires = settings.get_config("replicator_expires")
+        self.expires = int(expires) if expires else 60
+
 
     async def get_replicas(self) -> list[Replicator]:
 
@@ -33,9 +36,9 @@ class Replicators:
                 name=name,
                 paths=self.paths,
                 methods=self.methods,
-                limit_expires=self.limit,
-                settings=self.settings,
-                cache=self.cache
+                limit=self.limit,
+                cache=self.cache,
+                limit_expires=self.expires
             )
 
             replicators.append(instance)

@@ -35,7 +35,9 @@ jobs:
 
             - name: init server
               run: |
-               python -m tests.functional.cli server run tests.functional.api:app --detached
+               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8000
+               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8001
+               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8002
                sleep 10
 
             
@@ -45,4 +47,5 @@ jobs:
             - name: get logs
               run: python -m tests.functional.cli server logs --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmdW5jdGlvbmFsLWNsaS10ZXN0IiwidHlwZSI6InVzZXJfdG9rZW4iLCJleHAiOjE3OTE2NzIxOTF9.8I2j-eTTR3ZFbll7BRzSa-ou2eT15P0c38EdZhv7rgM
             
-            
+            - name: execute replicate
+              run: python -m tests.functional.replicate
