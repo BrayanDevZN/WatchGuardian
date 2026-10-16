@@ -13,8 +13,10 @@ class ClientHttp(Client):
             settings.add_secret("url")
             url = settings.get_secret(secret_name="url")
 
-        elif settings is None and url is None:
 
+        if url is None:
+
+        
             url = "http://localhost:8000"
 
         
