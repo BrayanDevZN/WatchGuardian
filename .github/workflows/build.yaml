@@ -1,0 +1,64 @@
+name: build
+
+on:
+    push:
+        branches:
+            - main
+            - future/cache_db
+    pull_request:
+        branches:
+            - main
+            - future/cache_db
+
+jobs:
+
+    build:
+
+        runs-on: ubuntu-latest
+        services:
+          redis:
+            image: redis:alpine
+            ports:
+              - 6379:6379
+
+        steps:
+
+            - uses: actions/checkout@v4
+            
+            - uses: actions/setup-python@v5
+              with:
+                python_version: "3.14"
+
+            - name: install dependences
+              run: pip install -r requirements.txt
+
+            - name: bootstrap
+              run: python -m src.cli.main migrate make_tables
+
+            - name: unit
+              run:
+                |
+                python -m tests.unit.database
+                python -m tests.unit.logs
+                python -m tests.unit.cache
+                python -m tests.unit.token
+                python -m tests.unit.cmd
+
+            - name: integration
+              run:
+                |
+                python -m tests.integration.watch_logs
+                python -m tests.integration.watch_obs
+
+            
+
+            - name: drop tables
+              run: python -m src.cli.main migrate drop
+
+            
+            
+
+
+
+
+

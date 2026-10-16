@@ -1,0 +1,65 @@
+"Inicia a api"
+from src.auth.token import logger
+from src.core.module import Settings
+from src.service.cache import CacheManage
+from .midlleware import Midlleware
+from .handles.logs import logs_router
+from .handles.obs import obs_router
+from .handles.auth import auth_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+
+class Server:
+
+    def __init__(self, settings: Settings) -> None:
+        self.app = FastAPI()
+        self.routes = [logs_router, obs_router, auth_router]
+        self.app.state.settings = settings
+        self.settings = settings
+        self.cache = CacheManage(settings=self.settings)
+
+    def _cors(self) -> None:
+        logger.info("Creating CORS configuration...")
+
+        origin = self.settings.required_secrets(secret="origin")
+        self.origin = list(origin) if "[" in origin else origin
+
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=self.origin,
+            allow_headers=["*"],
+            allow_methods=["*"]
+        )
+
+        logger.success("CORS configuration created successfully.")
+
+    def _router(self) -> None:
+        logger.info("Adding routes...")
+
+        for router in self.routes:
+            self.app.include_router(router=router)
+
+        logger.success("Routes added successfully.")
+
+    def _midlle(self) -> None:
+        logger.info("Creating middleware...")
+
+        self.app.add_middleware(
+            Midlleware,
+            settings=self.settings,
+            cache=self.cache,
+            origin=self.origin
+        )
+
+        logger.success("Middleware created successfully.")
+
+    def run(self) -> FastAPI:
+        logger.info("Starting server...")
+
+        self._cors()
+        self._router()
+        self._midlle()
+
+        logger.success("Server started successfully.")
+        return self.app
