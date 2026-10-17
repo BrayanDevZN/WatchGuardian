@@ -1,0 +1,1 @@
+"""Project setup helpers for WatchGuardian."""
