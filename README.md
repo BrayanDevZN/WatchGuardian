@@ -573,7 +573,7 @@ O `--path` escolhe a pasta de destino e `--name` define o nome da pasta criada.
 
 ### Usar a configuração do projeto no CLI
 
-Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project` com o caminho da pasta criada por `startproject`. O CLI carrega o `app` de `main.py` e executa a ação com os módulos e as configurações desse projeto.
+Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project` com o caminho da pasta criada por `startproject`. O CLI lê as configurações do `app` em `main.py` e inicializa somente os módulos necessários para o comando; `await app.load_module()` continua carregando todos quando você usa o app diretamente.
 
 ```bash
 watchguardian migrate make_tables --project ./apps/MinhaApp
@@ -1046,7 +1046,7 @@ python -m build
 
 ## Status
 
-Versão preparada para a próxima publicação: **0.2.6**.
+Versão preparada para a próxima publicação: **0.2.7**.
 
 - [x] Framework instalável via PyPI
 - [x] API pública em `WatchGuardian`
