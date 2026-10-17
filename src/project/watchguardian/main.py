@@ -4,8 +4,12 @@ import asyncio
 import json
 from pathlib import Path
 
-from .module import WatchModule
-from .settings import ProjectSettings
+if __package__:
+    from .module import WatchModule
+    from .settings import ProjectSettings
+else:
+    from src.project.watchguardian.module import WatchModule
+    from src.project.watchguardian.settings import ProjectSettings
 
 
 class ProjectApp:
