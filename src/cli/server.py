@@ -10,7 +10,7 @@ from src.logs.module import Logs
 from src.service.module import ClientHttp, Cmd, Settings, WatchDb
 
 from .migrate import run_migrate
-from .project import add_project_argument, load_project_modules
+from .project import add_project_argument, load_project_modules, resolve_project_path
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -103,7 +103,8 @@ def _print_obs(item: dict) -> None:
 
 
 async def run_server(args) -> None:
-    if args.command == "run" and args.detached and args.project is not None:
+    if args.command == "run" and args.detached and resolve_project_path(args.project) is not None:
+        project_path = resolve_project_path(args.project)
         command_parts = [
             sys.executable,
             "-m",
@@ -111,12 +112,14 @@ async def run_server(args) -> None:
             "server",
             "run",
             "--project",
-            str(args.project),
+            str(project_path),
             "--host",
             args.host,
             "--port",
             str(args.port),
         ]
+        if args.env_file is not None:
+            command_parts.extend(["--env-file", args.env_file])
         process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
         url = f"http://{args.host}:{args.port}"
         logger.success(
