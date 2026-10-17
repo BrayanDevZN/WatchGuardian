@@ -6,6 +6,7 @@ from .migrate import migrate, run_migrate
 from .auth import auth, run_auth
 from .server import server, run_server
 from .balance import balance, run_balance
+from .startproject import startproject, run_startproject
 
 import argparse
 import asyncio
@@ -25,6 +26,7 @@ async def run() -> None:
         auth,
         server,
         balance,
+        startproject,
     ]
 
     for command in commands:
@@ -43,6 +45,9 @@ async def run() -> None:
 
     elif args.module == "balance":
         await run_balance(args)
+
+    elif args.module == "startproject":
+        run_startproject(args)
 
 
 def main() -> None:
