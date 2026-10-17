@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from src.service.module import Settings, WatchDb
-from .project import add_project_argument, load_project
+from .project import add_project_argument, load_project_app, load_project_settings
 
 
 def migrate(subparser) -> None:
@@ -66,8 +66,11 @@ def configure_project_database_path(
 async def run_migrate(args) -> None:
     if args.project is not None:
         configure_project_database_path(args.project, args.path)
-        project = await load_project(args.project)
-        control_db = project.watch_db
+        project_app = load_project_app(args.project)
+        settings = load_project_settings(project_app)
+        # Migrations must not boot WatchLogs, WatchServer, or WatchBalance.
+        # Those modules can write logs before the tables exist.
+        control_db = await WatchDb(settings=settings, http=project_app.http)
     else:
         env = args.env_file
         settings = Settings(env_file=env) if env is not None else Settings()
