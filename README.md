@@ -1046,7 +1046,7 @@ python -m build
 
 ## Status
 
-Versão preparada para a próxima publicação: **0.2.0**.
+Versão preparada para a próxima publicação: **0.2.6**.
 
 - [x] Framework instalável via PyPI
 - [x] API pública em `WatchGuardian`
