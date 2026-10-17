@@ -5,6 +5,19 @@ from secrets import token_urlsafe
 from WatchGuardian import Settings, WatchLogs
 
 
+DEFAULT_CONFIGS = {
+    # Local WatchDb
+    "path": None,
+    # Replicators / WatchBalance
+    "replicator_name": "watchguardian-local",
+    "replicator_urls": ["http://localhost:8000"],
+    "replicator_paths": "*",
+    "replicator_methods": "*",
+    "replicator_limit": 60,
+    "replicator_expires": 60,
+}
+
+
 class ProjectSettings:
     """Prepare settings used by the public WatchGuardian modules."""
 
@@ -60,21 +73,9 @@ class ProjectSettings:
 
     def local_config(self) -> None:
         """Add configs consumed by WatchDb and the load balancer."""
-        defaults = {
-            # Local WatchDb
-            "path": None,
-            # Replicators / WatchBalance
-            "replicator_name": "watchguardian-local",
-            "replicator_urls": ["http://localhost:8000"],
-            "replicator_paths": "*",
-            "replicator_methods": "*",
-            "replicator_limit": 60,
-            "replicator_expires": 60,
-        }
-
         self.logs.info("Starting local config setup.")
 
-        for name, value in defaults.items():
+        for name, value in DEFAULT_CONFIGS.items():
             if name not in self.settings.configs:
                 self.settings.add_config({"name": name, "value": value})
                 source = "local default"
