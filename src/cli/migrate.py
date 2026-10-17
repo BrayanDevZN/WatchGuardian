@@ -102,6 +102,13 @@ async def run_migrate(args) -> None:
         configure_project_database_path(project_path, args.path)
         project_app = load_project_app(project_path)
         settings = load_project_settings(project_app)
+        if args.path is not None:
+            database_path = Path(args.path).expanduser()
+            if not database_path.is_absolute():
+                database_path = project_path / database_path
+            database_path = database_path.resolve()
+            database_path.mkdir(parents=True, exist_ok=True)
+            settings.add_config({"name": "path", "value": str(database_path)})
         # Migrations must not boot WatchLogs, WatchServer, or WatchBalance.
         control_db = await WatchDb(settings=settings, http=project_app.http)
     else:
