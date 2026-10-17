@@ -452,12 +452,12 @@ Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de
 
 O comando `watchguardian startproject` copia a pasta-template `src/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`. O template contém:
 
-- o pacote público `WatchGuardian/`;
 - `main.py`, que cria e exporta `app`;
-- `manage.py`, `module.py` e `settings.py`, que inicializam e conectam os módulos;
-- `settings.json`, com as configurações iniciais do projeto.
+- `manage.py`, `module.py` e `settings.py`, que inicializam e conectam os módulos.
 
-O arquivo `src/project/file.py` é o copiador: ele duplica essa pasta-template, ajusta o nome, o caminho e o arquivo de ambiente no `settings.json`, e salva a cópia no destino escolhido.
+O pacote público `WatchGuardian` é instalado como dependência do framework; ele não é duplicado dentro do template. A pasta-base `src/project/watchguardian/` também não contém `settings.json`.
+
+O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.json` dentro da pasta gerada. Esse JSON recebe o nome, caminho, arquivo de ambiente, modo local/HTTP, nível de log e as configurações padrão. Assim, o arquivo só passa a existir no projeto do usuário depois de executar `startproject`.
 
 Exemplo:
 
