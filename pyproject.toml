@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watchguardian"
-version = "0.2.10"
+version = "0.2.11"
 description = "Observability, logging, database, authentication and server utilities for Python applications."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -32,7 +32,7 @@ Repository = "https://github.com/BrayanDevZN/WatchGuardian"
 
 [project.scripts]
 watchguardian = "src.cli.main:main"
-watchguardian-startproject = "src.cli.startproject:main"
+watchguardian-project = "src.cli.project_commands:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
