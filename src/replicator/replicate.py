@@ -2,7 +2,8 @@ from src.logs.module import Logs
 logger = Logs(loglevel="SUCCESS")
 "Contra a replcia especifica"
 from src.core.module import Settings
-from src.service.module import ClientHttp, CacheManage
+from src.service.client import ClientHttp
+from src.service.cache import CacheManage
 class PathError(Exception):
     pass 
 class MethodError(Exception):
