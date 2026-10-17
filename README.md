@@ -520,7 +520,7 @@ As configurações personalizadas vão no objeto `configs` do `settings.json`. E
 | `replicators` | `Replicators` | Réplicas configuradas para o balanceador |
 | `watch_balance` / `balance_app` | `WatchBalance` / FastAPI | Balanceador e sua aplicação ASGI |
 
-`app.load_module()` carrega os módulos e retorna o próprio `WatchModule`. O CLI faz essa inicialização ao receber `--project`, então comandos de banco, autenticação, servidor e balanceamento usam as configurações da pasta indicada.
+`app.load_module()` carrega os módulos e retorna o próprio `WatchModule`. Os comandos `migrate`, `auth`, `server` e `balance` aceitam `--project`; se a opção for omitida, o CLI procura automaticamente `./watchguardian`. Para a lista completa de opções e exemplos, consulte [docs/cli.md](docs/cli.md).
 
 Também é possível iniciar o agregador no código, sem usar a pasta gerada:
 
