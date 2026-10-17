@@ -53,6 +53,7 @@ Depois da instalação, os imports públicos são:
 from WatchGuardian import Settings, WatchLogs, WatchObs, WatchAuth
 from WatchGuardian.database import WatchDb, CacheManage
 from WatchGuardian.server import ClientHttp, WatchServer
+from WatchGuardian.balance import WatchBalance, Replicator, Replicators
 ```
 
 E a CLI fica disponível diretamente no terminal:
@@ -435,6 +436,34 @@ watchguardian [comando]
 watchguardian --help
 ```
 
+### Criar um projeto
+
+O comando `startproject` cria uma pasta com uma cópia do pacote público, um `main.py` e um `settings.json`. Sem `--env-file`, o projeto usa as configurações locais padrão; quando o arquivo é informado, o projeto usa o modo HTTP configurado pelo framework.
+
+```bash
+watchguardian startproject
+watchguardian startproject --path ./apps --name MinhaApp
+watchguardian startproject --path ./apps --name MinhaApp --env-file .env
+```
+
+O `--path` escolhe a pasta de destino e `--name` define o nome da pasta criada.
+
+### Usar a configuração do projeto no CLI
+
+Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project` com o caminho da pasta criada por `startproject`. O CLI carrega o `app` de `main.py` e executa a ação com os módulos e as configurações desse projeto.
+
+```bash
+watchguardian migrate make_tables --project ./apps/MinhaApp
+watchguardian auth secret --project ./apps/MinhaApp
+watchguardian auth token --type user_token --project ./apps/MinhaApp
+watchguardian server run --project ./apps/MinhaApp --host 0.0.0.0 --port 8080
+watchguardian balance create --project ./apps/MinhaApp
+watchguardian balance valid --project ./apps/MinhaApp
+watchguardian balance logs --project ./apps/MinhaApp --token SEU_TOKEN
+```
+
+Se a pasta ou os arquivos `main.py` e `settings.json` estiverem ausentes, o comando falha com erro.
+
 ### Banco
 
 ```bash
@@ -471,11 +500,32 @@ watchguardian server run main:app --host 0.0.0.0 --port 8080
 watchguardian server run main:app --detached
 ```
 
+### Balance
+
+Crie o balanceador apontando para um objeto importável no formato `modulo:atributo`, ou use as réplicas configuradas no projeto:
+
+```bash
+watchguardian balance create config:replicators --host 0.0.0.0 --port 8000
+watchguardian balance create --project ./apps/MinhaApp --host 0.0.0.0 --port 8000
+watchguardian balance create --project ./apps/MinhaApp --detached
+watchguardian balance valid --project ./apps/MinhaApp
+watchguardian balance logs --project ./apps/MinhaApp --token SEU_TOKEN
+```
+
+Sem `--project`, os comandos `balance valid` e `balance logs` também aceitam o alvo `modulo:atributo`.
+
 ### Consultar dados do servidor
 
 ```bash
 watchguardian server logs --token SEU_TOKEN
 watchguardian server obs --token SEU_TOKEN
+```
+
+Com projeto:
+
+```bash
+watchguardian server logs --project ./apps/MinhaApp
+watchguardian server obs --project ./apps/MinhaApp
 ```
 
 ---
@@ -621,6 +671,7 @@ WatchGuardian/
 │   ├── core/
 │   ├── database/
 │   ├── logs/
+│   ├── project/              # agregador e configuração do projeto
 │   ├── server/
 │   ├── service/
 │   └── util/
@@ -660,7 +711,7 @@ python -m build
 
 ## Status
 
-Versão pública atual: **0.1.0**.
+Versão pública atual: **0.2.0**.
 
 - [x] Framework instalável via PyPI
 - [x] API pública em `WatchGuardian`
