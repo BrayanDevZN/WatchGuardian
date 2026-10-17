@@ -47,7 +47,9 @@ jobs:
         run: python -m tests.functional.client
 
       - name: get logs
-        run: python -m tests.functional.cli server logs --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmdW5jdGlvbmFsLWNsaS10ZXN0IiwidHlwZSI6InVzZXJfdG9rZW4iLCJleHAiOjE3OTE2NzIxOTF9.8I2j-eTTR3ZFbll7BRzSa-ou2eT15P0c38EdZhv7rgM
+        run: |
+          TOKEN=$(python -c "import asyncio; from src.service.module import Settings, WatchAuth; print(asyncio.run(WatchAuth(settings=Settings()).user_token(payload={'sub': 'functional-cli-test'})))")
+          python -m tests.functional.cli server logs --token "$TOKEN"
 
       - name: execute replicate
         run: python -m tests.functional.replicate
