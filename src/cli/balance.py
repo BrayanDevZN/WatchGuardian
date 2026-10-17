@@ -9,7 +9,7 @@ import uvicorn
 from src.logs.module import Logs
 from src.service.module import Cmd, Replicator, Replicators, Settings, WatchBalance
 
-from .project import add_project_argument, load_project_modules
+from .project import add_project_argument, load_project_modules, resolve_project_path
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -139,6 +139,7 @@ def _get_token(token: str | None, env_file: str | None) -> str:
 
 async def run_balance(args) -> None:
     if args.command == "create" and args.detached:
+        project_path = resolve_project_path(args.project)
         command_parts = [
             sys.executable,
             "-m",
@@ -147,8 +148,8 @@ async def run_balance(args) -> None:
             "create",
         ]
 
-        if args.project is not None:
-            command_parts.extend(["--project", str(args.project)])
+        if project_path is not None:
+            command_parts.extend(["--project", str(project_path)])
         elif args.target is not None:
             command_parts.append(args.target)
         else:
