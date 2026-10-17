@@ -1,6 +1,7 @@
 """Load a generated WatchGuardian project for CLI commands."""
 
 import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -94,8 +95,58 @@ def load_project_settings(app):
     return settings
 
 
+async def load_project_modules(
+    project_path: str | Path | None,
+    modules: tuple[str, ...] | list[str],
+):
+    """Load only requested modules from a generated project."""
+    app = load_project_app(project_path)
+    if app is None:
+        return None
+
+    settings = load_project_settings(app)
+    project_main = sys.modules.get(type(app).__module__)
+    module_class = getattr(project_main, "WatchModule", None)
+    if module_class is None:
+        from src.project.watchguardian.module import WatchModule as module_class
+
+    module = module_class(
+        settings=settings,
+        http=app.http,
+        loglevel=app.project_config.get("loglevel", "INFO"),
+    )
+    app.module = module
+
+    initializers = {
+        "database": module.database,
+        "logs": module.logs,
+        "observability": module.observability,
+        "auth": module.auth,
+        "cache": module.cache_module,
+        "client": module.client,
+        "server": module.server,
+        "replicators": module.replica_module,
+        "balance": module.balance,
+    }
+
+    for name in modules:
+        try:
+            initializer = initializers[name]
+        except KeyError:
+            available = ", ".join(sorted(initializers))
+            raise ValueError(
+                f"Unknown project module {name!r}. Available modules: {available}"
+            ) from None
+
+        initialized = initializer()
+        if inspect.isawaitable(initialized):
+            await initialized
+
+    return module
+
+
 async def load_project(project_path: str | Path | None):
-    """Import app from a project directory and return its loaded WatchModule."""
+    """Import app from a project directory and return its fully loaded WatchModule."""
     app = load_project_app(project_path)
     if app is None:
         return None
