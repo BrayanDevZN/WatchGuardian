@@ -118,8 +118,6 @@ async def run_server(args) -> None:
             "--port",
             str(args.port),
         ]
-        if args.env_file is not None:
-            command_parts.extend(["--env-file", args.env_file])
         process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
         url = f"http://{args.host}:{args.port}"
         logger.success(
