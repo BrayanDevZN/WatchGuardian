@@ -1,8 +1,12 @@
 """Tests migration database paths and the --project/--path options."""
 
 import argparse
+import asyncio
+import importlib
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from src.cli.migrate import configure_project_database_path, migrate
 from src.project.watchguardian.settings import resolve_project_configs
@@ -72,7 +76,56 @@ def test_app_resolves_database_path_from_project_root(tmp_path: Path) -> None:
     assert (tmp_path / "data").is_dir()
 
 
+def test_project_migration_does_not_start_all_modules() -> None:
+    migrate_cli = importlib.import_module("src.cli.migrate")
+    events = []
+
+    class FakeApp:
+        http = None
+
+        async def load_module(self):
+            raise AssertionError("migrate must not load server and balance modules")
+
+    class FakeDatabase:
+        def __init__(self, *, settings, http):
+            events.append(("database_init", settings, http))
+
+        def __await__(self):
+            async def ready():
+                events.append(("database_ready",))
+                return self
+
+            return ready().__await__()
+
+        async def create_tables(self):
+            events.append(("create_tables",))
+
+    with TemporaryDirectory() as temporary_directory:
+        project = Path(temporary_directory)
+        _project_settings(project)
+        args = argparse.Namespace(
+            project=project,
+            path=None,
+            env_file=None,
+            command="make_tables",
+        )
+
+        with (
+            patch.object(migrate_cli, "load_project_app", return_value=FakeApp()),
+            patch.object(migrate_cli, "load_project_settings", return_value="settings"),
+            patch.object(migrate_cli, "WatchDb", FakeDatabase),
+        ):
+            asyncio.run(migrate_cli.run_migrate(args))
+
+    assert [event[0] for event in events] == [
+        "database_init",
+        "database_ready",
+        "create_tables",
+    ]
+
+
 if __name__ == "__main__":
     test_project_and_path_before_migrate_action()
     test_project_and_path_after_migrate_action()
+    test_project_migration_does_not_start_all_modules()
     print("Migrate CLI project path tests passed")
