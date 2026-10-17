@@ -48,7 +48,7 @@ jobs:
 
       - name: get logs
         run: |
-          TOKEN=$(python -c "import asyncio; from src.service.module import Settings, WatchAuth; print(asyncio.run(WatchAuth(settings=Settings()).user_token(payload={'sub': 'functional-cli-test'})))")
+          TOKEN=$(python -c "import asyncio; from src.service.module import Settings, WatchAuth; settings=Settings(); settings.secrets['secret']='watchguardian-functional-test-secret-2026'; print(asyncio.run(WatchAuth(settings=settings).user_token(payload={'sub': 'functional-cli-test'})))")
           python -m tests.functional.cli server logs --token "$TOKEN"
 
       - name: execute replicate
