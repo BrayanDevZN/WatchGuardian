@@ -1,51 +1,53 @@
 name: server
 
 on:
-
-    push:
-        branches:
-            - main
-    pull_request:
-            branches:
-                - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
+  server:
+    runs-on: ubuntu-latest
 
-    server:
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
 
-        runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
-        services:
-            redis:
-                image: redis:alpine
-                ports:
-                    - 6379:6379
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
 
-        steps:
+      - name: get dependences
+        run: pip install -r requirements.txt
 
-            - uses: actions/checkout@v3
+      - name: init api replicas
+        run: |
+          python -m tests.functional.cli server run tests.functional.api:app --detached --port 8000
+          python -m tests.functional.cli server run tests.functional.api:app --detached --port 8001
+          python -m tests.functional.cli server run tests.functional.api:app --detached --port 8002
+          sleep 10
 
-            - uses: actions/setup-python@v5
-              with:
-                python-version: 3.14
+      - name: init balance api
+        run: python -m tests.functional.cli balance create tests.functional.api_balance:replicas --detached --port 8003
 
-            
-            - name: get dependences
-              run: pip install -r requirements.txt
+      - name: test balance health
+        run: |
+          sleep 5
+          python -m tests.functional.client_balance
 
-            - name: init server
-              run: |
-               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8000
-               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8001
-               python -m tests.functional.cli server run tests.functional.api:app --detached --port 8002
-               sleep 10
+      - name: execute client
+        run: python -m tests.functional.client
 
-            
-            - name: execute client
-              run: python -m tests.functional.client
+      - name: get logs
+        run: python -m tests.functional.cli server logs --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmdW5jdGlvbmFsLWNsaS10ZXN0IiwidHlwZSI6InVzZXJfdG9rZW4iLCJleHAiOjE3OTE2NzIxOTF9.8I2j-eTTR3ZFbll7BRzSa-ou2eT15P0c38EdZhv7rgM
 
-            - name: get logs
-              run: python -m tests.functional.cli server logs --token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmdW5jdGlvbmFsLWNsaS10ZXN0IiwidHlwZSI6InVzZXJfdG9rZW4iLCJleHAiOjE3OTE2NzIxOTF9.8I2j-eTTR3ZFbll7BRzSa-ou2eT15P0c38EdZhv7rgM
-            
-            - name: execute replicate
-              run: python -m tests.functional.replicate
+      - name: execute replicate
+        run: python -m tests.functional.replicate
