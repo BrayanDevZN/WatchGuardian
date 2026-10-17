@@ -1,6 +1,7 @@
-"""CLI para criar e executar o balanceador WatchGuardian."""
+"""CLI para criar e consultar o balanceador WatchGuardian."""
 
 import importlib
+import os
 
 import uvicorn
 
@@ -15,7 +16,7 @@ logger = Logs(loglevel="SUCCESS")
 def balance(subparser) -> None:
     balance_parser = subparser.add_parser(
         "balance",
-        help="Criar e executar um balanceador",
+        help="Criar e consultar um balanceador",
     )
     balance_commands = balance_parser.add_subparsers(
         dest="command",
@@ -37,6 +38,23 @@ def balance(subparser) -> None:
     )
     create_parser.add_argument("--host", default="127.0.0.1")
     create_parser.add_argument("--port", type=int, default=8000)
+
+    valid_parser = balance_commands.add_parser(
+        "valid",
+        help="Listar as URLs das réplicas saudáveis",
+    )
+    valid_parser.add_argument("target", metavar="caminho:objeto")
+
+    logs_parser = balance_commands.add_parser(
+        "logs",
+        help="Buscar logs nas réplicas saudáveis",
+    )
+    logs_parser.add_argument("target", metavar="caminho:objeto")
+    logs_parser.add_argument(
+        "--token",
+        default=None,
+        help="Token de usuário; se omitido, usa a variável de ambiente 'token'",
+    )
 
 
 def _load_target(target: str):
@@ -69,20 +87,83 @@ def _load_target(target: str):
     return value
 
 
-async def run_balance(args) -> None:
-    if args.command != "create":
-        return
+def _replicas(target: str) -> list[Replicator]:
+    value = _load_target(target)
+    return value.get_replicas_sync() if isinstance(value, Replicators) else value
 
+
+async def _healthy_replicas(replicas: list[Replicator]) -> list[Replicator]:
+    healthy = []
+    for replica in replicas:
+        try:
+            if await replica.valid():
+                healthy.append(replica)
+        except Exception as error:
+            logger.warning(f"Falha ao verificar {replica.url}: {error}")
+    return healthy
+
+
+def _print_log(item: dict, replica_url: str) -> None:
+    status = str(item.get("status", "INFO")).upper()
+    text = str(item.get("log", ""))
+    metadata = (
+        f"replica={replica_url} | "
+        f"id={item.get('id')} | "
+        f"public_id={item.get('public_id')} | "
+        f"created_at={item.get('created_at')} | "
+        f"{text}"
+    )
+    method = getattr(logger, status.lower(), logger.info)
+    method(metadata)
+
+
+def _get_token(token: str | None) -> str:
+    resolved = token or os.getenv("token")
+    if not resolved:
+        raise SystemExit(
+            "Informe --token ou defina a variável de ambiente 'token'."
+        )
+    return resolved
+
+
+async def run_balance(args) -> None:
     try:
-        replicas = _load_target(args.target)
+        replicas = _replicas(args.target)
     except (ImportError, AttributeError, TypeError, ValueError) as error:
         raise SystemExit(
-            f"Não foi possível carregar o balanceador: {error}"
+            f"Não foi possível carregar as réplicas: {error}"
         ) from error
 
-    app = WatchBalance(replicas=replicas).run()
-    logger.success(f"Balance iniciado em http://{args.host}:{args.port}")
+    if args.command == "create":
+        app = WatchBalance(replicas=replicas).run()
+        logger.success(f"Balance iniciado em http://{args.host}:{args.port}")
+        config = uvicorn.Config(app, host=args.host, port=args.port)
+        server = uvicorn.Server(config)
+        await server.serve()
+        return
 
-    config = uvicorn.Config(app, host=args.host, port=args.port)
-    server = uvicorn.Server(config)
-    await server.serve()
+    healthy = await _healthy_replicas(replicas)
+
+    if args.command == "valid":
+        if not healthy:
+            logger.warning("Nenhuma réplica saudável encontrada.")
+            return
+
+        for replica in healthy:
+            logger.success(replica.url)
+        return
+
+    if args.command == "logs":
+        token = _get_token(args.token)
+        if not healthy:
+            logger.warning("Nenhuma réplica saudável encontrada.")
+            return
+
+        for replica in healthy:
+            records = await replica.logs(token=token).get_log()
+            if records is None:
+                continue
+            if isinstance(records, dict):
+                records = [records]
+            for record in records:
+                _print_log(record, replica.url)
