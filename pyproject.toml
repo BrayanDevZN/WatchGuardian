@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "watchguardian"
-version = "0.1.1"
+version = "0.2.0"
 description = "Observability, logging, database, authentication and server utilities for Python applications."
 readme = "README.md"
 requires-python = ">=3.12"
-license = { file = "LICENSE" }
+license = "MIT"
 authors = [
     { name = "Brayan de Souza Dias Vaz" }
 ]
