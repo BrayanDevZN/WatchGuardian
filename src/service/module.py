@@ -12,9 +12,12 @@ from src.util.cmd import Cmd
 from .client import ClientHttp
 from .server import WatchServer
 from .token import WatchAuth, logger
-
+from .balance import WatchBalance, Replicator, Replicators
 
 __all__ = [
+    "WatchBalance",
+    "Replicator",
+    "Replicators",
     "Settings",
     "JWT",
     "CacheManage",
