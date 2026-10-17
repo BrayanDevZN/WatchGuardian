@@ -30,7 +30,7 @@ Responsabilidades principais:
 - `manage.py`: cria o FastAPI, registra CORS, routers e middleware.
 - `midlleware.py`: aplica o rate limit HTTP usando Redis; o middleware não processa conexões WebSocket.
 - `events.py`: publica eventos localmente e, quando Redis está configurado, distribui-os por Redis Pub/Sub.
-- `routes/ws.py`: registra os WebSockets separados de logs e observabilidade.
+- `handles/ws.py`: registra os WebSockets separados de logs e observabilidade.
 - `depends.py`: valida o `user_token` nas rotas protegidas.
 - `handles/logs.py`: CRUD HTTP de logs.
 - `handles/obs.py`: CRUD HTTP de observabilidade.
