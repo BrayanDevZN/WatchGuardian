@@ -38,7 +38,7 @@ class Midlleware(BaseHTTPMiddleware):
 
                 valid = await replica.valid()
 
-                if valid and self.request.method in replica.methods:
+                if valid and request.method in replica.methods:
                     self.replica = replica.url
                     logger.success(f"Replica escolhida: {replica.url}")
                     break
