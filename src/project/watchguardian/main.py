@@ -13,7 +13,7 @@ else:
 
 
 class ProjectApp:
-    """Load project settings and initialize WatchGuardian modules."""
+    """Load project settings and expose all initialized WatchGuardian modules."""
 
     def __init__(self) -> None:
         self.settings_path = Path(__file__).with_name("settings.json")
@@ -25,6 +25,22 @@ class ProjectApp:
         self.http = self.project_config.get("http")
         self.settings = None
         self.module = None
+
+    def __getattr__(self, name: str):
+        """Forward module attributes so they are available directly on app."""
+        module = self.__dict__.get("module")
+        if module is None:
+            raise AttributeError(
+                f"Project modules are not loaded yet; call "
+                f"'await app.load_module()' before accessing '{name}'."
+            )
+        try:
+            return getattr(module, name)
+        except AttributeError:
+            raise AttributeError(
+                f"{type(self).__name__!s} has no attribute {name!r}; "
+                "check the available WatchModule attributes."
+            ) from None
 
     async def load_module(self):
         """Apply JSON configs, initialize modules, and return WatchModule."""
