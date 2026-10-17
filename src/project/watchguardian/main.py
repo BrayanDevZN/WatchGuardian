@@ -42,8 +42,11 @@ class ProjectApp:
                 "check the available WatchModule attributes."
             ) from None
 
-    async def load_module(self):
-        """Apply JSON configs, initialize modules, and return WatchModule."""
+    def load_settings(self):
+        """Load environment and project JSON settings without starting modules."""
+        if self.settings is not None:
+            return self.settings
+
         env_file = self.project_config.get("env_file")
         if env_file is not None:
             env_path = Path(env_file)
@@ -66,8 +69,12 @@ class ProjectApp:
         for name, value in configs.items():
             self.settings.add_config({"name": name, "value": value})
 
+        return self.settings
+
+    async def load_module(self):
+        """Apply project settings, initialize modules, and return WatchModule."""
         self.module = WatchModule(
-            settings=self.settings,
+            settings=self.load_settings(),
             http=self.http,
             loglevel=self.project_config.get("loglevel", "INFO"),
         )
