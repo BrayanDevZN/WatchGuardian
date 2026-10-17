@@ -492,7 +492,7 @@ O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.j
 Exemplo:
 
 ```bash
-watchguardian startproject --path ./apps --name watchguardian
+watchguardian startproject --path ./apps --name myapp
 cd apps/watchguardian
 ```
 
@@ -565,8 +565,8 @@ O comando `startproject` cria a estrutura descrita na seção [Projeto gerado](#
 
 ```bash
 watchguardian startproject
-watchguardian startproject --path ./apps --name watchguardian
-watchguardian startproject --path ./apps --name watchguardian --env-file .env
+watchguardian startproject --path ./apps --name myapp
+watchguardian startproject --path ./apps --name myapp --env-file .env
 ```
 
 O `--path` escolhe a pasta de destino e `--name` define o nome da pasta criada.
@@ -576,13 +576,13 @@ O `--path` escolhe a pasta de destino e `--name` define o nome da pasta criada.
 Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project` com o caminho da pasta criada por `startproject`. O CLI lê as configurações do `app` em `main.py` e inicializa somente os módulos necessários para o comando; `await app.load_module()` continua carregando todos quando você usa o app diretamente.
 
 ```bash
-watchguardian migrate make_tables --project ./apps/watchguardian
-watchguardian auth secret --project ./apps/watchguardian
-watchguardian auth token --type user_token --project ./apps/watchguardian
-watchguardian server run --project ./apps/watchguardian --host 0.0.0.0 --port 8080
-watchguardian balance create --project ./apps/watchguardian
-watchguardian balance valid --project ./apps/watchguardian
-watchguardian balance logs --project ./apps/watchguardian --token SEU_TOKEN
+watchguardian migrate make_tables --project ./apps/myapp
+watchguardian auth secret --project ./apps/myapp
+watchguardian auth token --type user_token --project ./apps/myapp
+watchguardian server run --project ./apps/myapp --host 0.0.0.0 --port 8080
+watchguardian balance create --project ./apps/myapp
+watchguardian balance valid --project ./apps/myapp
+watchguardian balance logs --project ./apps/myapp --token SEU_TOKEN
 ```
 
 Se a pasta ou os arquivos `main.py` e `settings.json` estiverem ausentes, o comando falha com erro.
@@ -629,16 +629,16 @@ O balanceador recebe chamadas no endereço configurado e redireciona para uma r�
 
 ```bash
 # Inicia o servidor usando as URLs de réplica de settings.json
-watchguardian balance create --project ./apps/watchguardian --host 0.0.0.0 --port 8000
+watchguardian balance create --project ./apps/myapp --host 0.0.0.0 --port 8000
 
 # Mantém o balanceador em segundo plano
-watchguardian balance create --project ./apps/watchguardian --detached
+watchguardian balance create --project ./apps/myapp --detached
 
 # Lista as réplicas saudáveis
-watchguardian balance valid --project ./apps/watchguardian
+watchguardian balance valid --project ./apps/myapp
 
 # Consulta logs nas réplicas saudáveis
-watchguardian balance logs --project ./apps/watchguardian --token SEU_TOKEN
+watchguardian balance logs --project ./apps/myapp --token SEU_TOKEN
 ```
 
 Sem `--project`, `balance create` recebe um objeto importável no formato `modulo:atributo`. Esse objeto precisa ser `Replicators` ou uma lista de `Replicator`. Os comandos `valid` e `logs` aceitam o mesmo alvo.
@@ -659,8 +659,8 @@ Sem `--realtime`, os comandos fazem a consulta HTTP normal. Com a flag, ficam es
 Com projeto:
 
 ```bash
-watchguardian server logs --project ./apps/watchguardian
-watchguardian server obs --project ./apps/watchguardian
+watchguardian server logs --project ./apps/myapp
+watchguardian server obs --project ./apps/myapp
 ```
 
 
