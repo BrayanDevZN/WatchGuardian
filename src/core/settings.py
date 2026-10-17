@@ -58,15 +58,14 @@ class Settings:
     #Adiciona uma variavel de ambiente sem verificar se é none
     def add_secret(self, secrets:str|list[str]) -> None:
 
-        if isinstance(secrets, str):
+        names = [secrets] if isinstance(secrets, str) else secrets
 
-            self.secrets[secrets] = os.getenv(secrets)
-
-        else:
-
-            for name in secrets:
-
-                self.secrets[name] = os.getenv(name)
+        for name in names:
+            value = os.getenv(name)
+            # Um valor do ambiente/.env tem prioridade; se não existir,
+            # preserva um default local previamente registrado.
+            if value is not None or name not in self.secrets:
+                self.secrets[name] = value
 
 
     #Pega uma secret
