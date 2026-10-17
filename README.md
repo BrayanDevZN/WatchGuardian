@@ -492,8 +492,8 @@ O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.j
 Exemplo:
 
 ```bash
-watchguardian project start --path ./apps --name myapp
-cd apps/watchguardian
+watchguardian project start --path ./apps --name api
+watchguardian server run --project ./apps/api
 ```
 
 A classe `ProjectApp` lê o JSON. Quando chamada, ela prepara `ProjectSettings`, aplica as configurações salvas e inicializa um `WatchModule`. O objeto gerado fica disponível como `app` em `main.py`; depois da inicialização, `app.module` contém o agregador.
@@ -541,138 +541,28 @@ Passe um caminho em `env_file` para usar o modo HTTP do projeto; deixe `None` pa
 
 # CLI
 
-Após instalar pelo PyPI:
-
-```bash
-pip install watchguardian
-```
-
-A CLI fica disponível como:
-
-```bash
-watchguardian [comando]
-```
-
-### Ajuda
+A CLI possui os grupos `project`, `migrate`, `auth`, `server` e `balance`. Para a referência completa de opções, exemplos, ordem dos argumentos, `.env` e projetos, consulte [docs/cli.md](docs/cli.md).
 
 ```bash
 watchguardian --help
+watchguardian project --help
+watchguardian migrate --help
+watchguardian auth --help
+watchguardian server --help
+watchguardian balance --help
 ```
 
-### Criar um projeto
-
-O comando `project start` cria a estrutura descrita na seção [Projeto gerado](#projeto-gerado-projectapp-e-watchmodule). Por padrão, cria a pasta `./watchguardian` com configurações locais. Use `--with_env` para gerar um `.env` com as variáveis locais; também é possível informar um arquivo com `--env-file`. Valores presentes no arquivo são lidos e os ausentes recebem os defaults locais.
+Início rápido para criar e usar um projeto:
 
 ```bash
-watchguardian project start
-watchguardian project start --path ./apps --name myapp
 watchguardian project start --with_env
-watchguardian project start --env-file ./config/.env
-watchguardian project start --with_env --env-file ./config/.env
-```
-
-`--path` escolhe a pasta de destino e `--name` define o nome da pasta criada. O comando `project reset` redefine o projeto para as configurações locais e recria seu `.env`; `project delete` remove o projeto. Ambos usam `./watchguardian` quando `--project` não é informado.
-
-```bash
-watchguardian project reset
-watchguardian project reset --project ./apps/myapp
-watchguardian project delete --project ./apps/myapp
-```
-
-### Usar a configuração do projeto no CLI
-
-Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project`. Se omitido, procuram automaticamente `./watchguardian`. O CLI lê as configurações do `app` em `main.py` e inicializa somente os módulos necessários para o comando; `await app.load_module()` continua carregando todos quando você usa o app diretamente.
-
-```bash
 watchguardian migrate make_tables
 watchguardian auth secret
 watchguardian auth token --type user_token
 watchguardian server run --host 0.0.0.0 --port 8080
-watchguardian balance create
-watchguardian balance valid
-watchguardian balance logs --token SEU_TOKEN
 ```
 
-Para escolher outra pasta, passe `--project ./apps/myapp`. Se não houver um projeto padrão, os comandos que precisarem de configuração procuram o arquivo de ambiente; sem projeto ou configuração necessária, encerram com erro.
-
-### Banco
-
-```bash
-watchguardian migrate make_tables
-watchguardian migrate reset
-watchguardian migrate drop
-```
-
-Com arquivo `.env` específico:
-
-```bash
-watchguardian migrate --env-file .env.production make_tables
-```
-
-### Autenticação
-
-```bash
-watchguardian auth secret
-watchguardian auth token --type user_token --payload '{"user_id":"123"}'
-watchguardian auth token --type refresh_token --payload '{"user_id":"123"}'
-```
-
-### Servidor
-
-```bash
-watchguardian server run main:app
-```
-
-```bash
-watchguardian server run main:app --host 0.0.0.0 --port 8080
-```
-
-```bash
-watchguardian server run main:app --detached
-```
-
-### Balance
-
-O balanceador recebe chamadas no endereço configurado e redireciona para uma réplica saudável que aceite o método da requisição. Veja a seção [Balance: Replicator, Replicators e WatchBalance](#balance-replicator-replicators-e-watchbalance) para entender os módulos e as configurações das réplicas.
-
-```bash
-# Inicia o servidor usando as URLs de réplica de settings.json
-watchguardian balance create --project ./apps/myapp --host 0.0.0.0 --port 8000
-
-# Mantém o balanceador em segundo plano
-watchguardian balance create --project ./apps/myapp --detached
-
-# Lista as réplicas saudáveis
-watchguardian balance valid --project ./apps/myapp
-
-# Consulta logs nas réplicas saudáveis
-watchguardian balance logs --project ./apps/myapp --token SEU_TOKEN
-```
-
-Sem `--project`, `balance create` recebe um objeto importável no formato `modulo:atributo`. Esse objeto precisa ser `Replicators` ou uma lista de `Replicator`. Os comandos `valid` e `logs` aceitam o mesmo alvo.
-
-### Consultar dados do servidor
-
-```bash
-watchguardian server logs --token SEU_TOKEN
-watchguardian server obs --token SEU_TOKEN
-
-# Acompanha novos eventos em tempo real pelo WebSocket
-watchguardian server logs --token SEU_TOKEN --realtime
-watchguardian server obs --token SEU_TOKEN --realtime
-```
-
-Sem `--realtime`, os comandos fazem a consulta HTTP normal. Com a flag, ficam escutando o WebSocket até a conexão ser encerrada (por exemplo, com Ctrl+C).
-
-Com projeto:
-
-```bash
-watchguardian server logs --project ./apps/myapp
-watchguardian server obs --project ./apps/myapp
-```
-
-
----
+Por padrão, os comandos procuram o projeto em `./watchguardian`. Para outro diretório, passe `--project ./apps/api`. Sem um projeto encontrado, os comandos usam as variáveis de ambiente disponíveis e falham se faltar alguma configuração necessária.
 
 # Referência detalhada da API pública
 
