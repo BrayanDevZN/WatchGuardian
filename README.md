@@ -416,6 +416,94 @@ result = await client.auth(
 
 ---
 
+## Balance: `Replicator`, `Replicators` e `WatchBalance`
+
+O módulo de balance recebe as requisições HTTP e escolhe uma réplica WatchGuardian saudável para atendê-las. Ele testa as réplicas configuradas em sequência, considera os métodos HTTP permitidos e redireciona a requisição para a primeira réplica compatível. Se nenhuma ficar disponível dentro do timeout, retorna erro.
+
+- `Replicator` representa uma instância remota, com URL e regras de método, caminho e limite.
+- `Replicators` monta uma lista de `Replicator` usando as configurações compartilhadas.
+- `WatchBalance` cria a aplicação FastAPI do balanceador com o middleware e as rotas de redirecionamento.
+
+No modo de projeto, essas configurações ficam em `settings.json`, dentro de `configs`:
+
+```json
+{
+  "configs": {
+    "replicator_name": "api",
+    "replicator_urls": [
+      "http://localhost:8001",
+      "http://localhost:8002"
+    ],
+    "replicator_paths": "*",
+    "replicator_methods": ["GET", "POST"],
+    "replicator_limit": 60,
+    "replicator_expires": 60
+  }
+}
+```
+
+`replicator_urls` lista os servidores de destino. `replicator_methods` aceita `*` ou uma lista de métodos; `replicator_paths` aceita `*` ou caminhos reconhecidos pelo replicator. `replicator_limit` e `replicator_expires` configuram os parâmetros de limite e expiração usados por cada réplica.
+
+Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de `Replicator` pelo formato CLI `modulo:atributo`. Com projeto, as réplicas são criadas das configurações acima.
+
+## Projeto gerado: `ProjectApp` e `WatchModule`
+
+O comando `watchguardian startproject` cria uma pasta independente para iniciar uma aplicação com o framework. Ela contém:
+
+- uma cópia do pacote público `WatchGuardian/`;
+- `main.py`, que cria e exporta o objeto `app`;
+- `settings.json`, com o nome, o arquivo de ambiente, o modo de execução, o nível de log e as configurações.
+
+Exemplo:
+
+```bash
+watchguardian startproject --path ./apps --name MinhaApp
+cd apps/MinhaApp
+```
+
+A classe `ProjectApp` lê o JSON. Quando chamada, ela prepara `ProjectSettings`, aplica as configurações salvas e inicializa um `WatchModule`. O objeto gerado fica disponível como `app` em `main.py`; depois da inicialização, `app.module` contém o agregador.
+
+O campo `env_file` controla o modo:
+
+- `null`: modo local; aplica os secrets e configs padrão de `ProjectSettings` e usa `http = null`;
+- caminho para um arquivo: resolve o caminho relativo à pasta do projeto, não aplica os defaults locais e usa o modo HTTP (`http = true`).
+
+As configurações personalizadas vão no objeto `configs` do `settings.json`. Elas são adicionadas ao `Settings` compartilhado antes dos módulos serem construídos. Assim, por exemplo, as URLs de réplica do balanceador podem ser alteradas sem editar o código gerado.
+
+### Módulos disponíveis em `WatchModule`
+
+| Atributo | Instância | Para que serve |
+| --- | --- | --- |
+| `settings` | `Settings` | Configuração compartilhada por todos os módulos |
+| `watch_db` | `WatchDb` | Banco do framework; também conecta os módulos de logs e observabilidade |
+| `watch_logs` | `WatchLogs` | Logs ligados ao banco compartilhado |
+| `watch_obs` | `WatchObs` | Registro de tarefas, estados, erros e latência |
+| `watch_auth` | `WatchAuth` | Geração e validação de tokens |
+| `cache` | `CacheManage` ou `None` | Cache Redis obtido pelo banco |
+| `client_http` | `ClientHttp` | Cliente para consultar uma instância remota |
+| `watch_server` / `server_app` | `WatchServer` / FastAPI | Servidor de observabilidade e sua aplicação ASGI |
+| `replicators` | `Replicators` | Réplicas configuradas para o balanceador |
+| `watch_balance` / `balance_app` | `WatchBalance` / FastAPI | Balanceador e sua aplicação ASGI |
+
+`app.load_module()` carrega os módulos e retorna o próprio `WatchModule`. O CLI faz essa inicialização ao receber `--project`, então comandos de banco, autenticação, servidor e balanceamento usam as configurações da pasta indicada.
+
+Também é possível iniciar o agregador no código, sem usar a pasta gerada:
+
+```python
+import asyncio
+from src.project.manage import watch_manage
+
+async def main():
+    modules = await watch_manage(env_file=None)
+    await modules.watch_db.create_tables()
+
+asyncio.run(main())
+```
+
+Passe um caminho em `env_file` para usar o modo HTTP do projeto; deixe `None` para carregar os defaults locais.
+
+---
+
 # CLI
 
 Após instalar pelo PyPI:
@@ -438,7 +526,7 @@ watchguardian --help
 
 ### Criar um projeto
 
-O comando `startproject` cria uma pasta com uma cópia do pacote público, um `main.py` e um `settings.json`. Sem `--env-file`, o projeto usa as configurações locais padrão; quando o arquivo é informado, o projeto usa o modo HTTP configurado pelo framework.
+O comando `startproject` cria a estrutura descrita na seção [Projeto gerado](#projeto-gerado-projectapp-e-watchmodule). Sem `--env-file`, usa os defaults locais; quando você informa o arquivo, o projeto entra no modo HTTP. Os valores de configuração, incluindo os do balanceador, são ajustáveis em `settings.json`.
 
 ```bash
 watchguardian startproject
@@ -502,17 +590,23 @@ watchguardian server run main:app --detached
 
 ### Balance
 
-Crie o balanceador apontando para um objeto importável no formato `modulo:atributo`, ou use as réplicas configuradas no projeto:
+O balanceador recebe chamadas no endereço configurado e redireciona para uma réplica saudável que aceite o método da requisição. Veja a seção [Balance: Replicator, Replicators e WatchBalance](#balance-replicator-replicators-e-watchbalance) para entender os módulos e as configurações das réplicas.
 
 ```bash
-watchguardian balance create meu_modulo:replicators --host 0.0.0.0 --port 8000
+# Inicia o servidor usando as URLs de réplica de settings.json
 watchguardian balance create --project ./apps/MinhaApp --host 0.0.0.0 --port 8000
+
+# Mantém o balanceador em segundo plano
 watchguardian balance create --project ./apps/MinhaApp --detached
+
+# Lista as réplicas saudáveis
 watchguardian balance valid --project ./apps/MinhaApp
+
+# Consulta logs nas réplicas saudáveis
 watchguardian balance logs --project ./apps/MinhaApp --token SEU_TOKEN
 ```
 
-Sem `--project`, os comandos `balance valid` e `balance logs` também aceitam o alvo `modulo:atributo`.
+Sem `--project`, `balance create` recebe um objeto importável no formato `modulo:atributo`. Esse objeto precisa ser `Replicators` ou uma lista de `Replicator`. Os comandos `valid` e `logs` aceitam o mesmo alvo.
 
 ### Consultar dados do servidor
 
