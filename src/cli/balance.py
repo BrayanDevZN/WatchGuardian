@@ -1,13 +1,13 @@
 """CLI para criar e consultar o balanceador WatchGuardian."""
 
 import importlib
+import shlex
+import sys
 
 import uvicorn
 
 from src.logs.module import Logs
-from src.replicator.module import Replicator, Replicators
-from src.service.balance import WatchBalance
-from src.service.module import Settings
+from src.service.module import Cmd, Replicator, Replicators, Settings, WatchBalance
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -38,6 +38,11 @@ def balance(subparser) -> None:
     )
     create_parser.add_argument("--host", default="127.0.0.1")
     create_parser.add_argument("--port", type=int, default=8000)
+    create_parser.add_argument(
+        "--detached",
+        action="store_true",
+        help="Iniciar o balanceador em segundo plano",
+    )
 
     valid_parser = balance_commands.add_parser(
         "valid",
@@ -136,6 +141,28 @@ async def run_balance(args) -> None:
         ) from error
 
     if args.command == "create":
+        if args.detached:
+            command = " ".join(
+                shlex.quote(part)
+                for part in (
+                    sys.executable,
+                    "-m",
+                    "src.cli.main",
+                    "balance",
+                    "create",
+                    args.target,
+                    "--host",
+                    args.host,
+                    "--port",
+                    str(args.port),
+                )
+            )
+            process = Cmd.detached(command)
+            logger.success(
+                f"Balance iniciado em detached. PID: {process.pid}"
+            )
+            return
+
         app = WatchBalance(replicas=replicas).run()
         logger.success(f"Balance iniciado em http://{args.host}:{args.port}")
         config = uvicorn.Config(app, host=args.host, port=args.port)
