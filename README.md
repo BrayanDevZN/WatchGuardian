@@ -505,7 +505,7 @@ watchguardian server run main:app --detached
 Crie o balanceador apontando para um objeto importável no formato `modulo:atributo`, ou use as réplicas configuradas no projeto:
 
 ```bash
-watchguardian balance create config:replicators --host 0.0.0.0 --port 8000
+watchguardian balance create meu_modulo:replicators --host 0.0.0.0 --port 8000
 watchguardian balance create --project ./apps/MinhaApp --host 0.0.0.0 --port 8000
 watchguardian balance create --project ./apps/MinhaApp --detached
 watchguardian balance valid --project ./apps/MinhaApp
@@ -711,7 +711,7 @@ python -m build
 
 ## Status
 
-Versão pública atual: **0.2.0**.
+Versão preparada para a próxima publicação: **0.2.0**.
 
 - [x] Framework instalável via PyPI
 - [x] API pública em `WatchGuardian`
