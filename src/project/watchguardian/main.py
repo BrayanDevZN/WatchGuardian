@@ -3,13 +3,18 @@
 import asyncio
 import json
 from pathlib import Path
+from dotenv import dotenv_values
 
 if __package__:
     from .module import WatchModule
-    from .settings import ProjectSettings, resolve_project_configs
+    from .settings import DEFAULT_CONFIGS, ProjectSettings, resolve_project_configs
 else:
     from src.project.watchguardian.module import WatchModule
-    from src.project.watchguardian.settings import ProjectSettings, resolve_project_configs
+    from src.project.watchguardian.settings import (
+        DEFAULT_CONFIGS,
+        ProjectSettings,
+        resolve_project_configs,
+    )
 
 
 class ProjectApp:
@@ -19,8 +24,7 @@ class ProjectApp:
         self.settings_path = Path(__file__).with_name("settings.json")
         with self.settings_path.open(encoding="utf-8") as settings_file:
             self.project_config = json.load(settings_file)
-
-        self.name = self.project_config.get("name", "WatchGuardian")
+        self.name = self.project_config.get("name", "watchguardian")
         self.local = self.project_config.get("local", True)
         self.http = self.project_config.get("http")
         self.settings = None
@@ -95,7 +99,7 @@ class ProjectApp:
             ) from None
 
     def load_settings(self):
-        """Load environment and project JSON settings without starting modules."""
+        """Load the project's .env and settings.json with local fallbacks."""
         if self.settings is not None:
             return self.settings
 
@@ -103,24 +107,33 @@ class ProjectApp:
         if env_file is not None:
             env_path = Path(env_file)
             if not env_path.is_absolute():
-                env_file = str(self.settings_path.parent / env_path)
+                env_file = str((self.settings_path.parent / env_path).resolve())
 
-        self.local = env_file is None
-        self.http = None if self.local else True
-
-        project_settings = ProjectSettings(
-            env_file=env_file,
-            local=self.local,
+        self.local = self.project_config.get("local", env_file is None)
+        self.http = self.project_config.get(
+            "http", None if self.local else True
         )
+
+        project_settings = ProjectSettings(env_file=env_file, local=self.local)
         self.settings = project_settings.get()
+
+        config_values = dict(DEFAULT_CONFIGS)
+        config_values.update(self.project_config.get("configs", {}))
+        if env_file is not None:
+            for name, raw_value in dotenv_values(env_file).items():
+                if name in config_values and raw_value not in (None, ""):
+                    try:
+                        config_values[name] = json.loads(raw_value)
+                    except json.JSONDecodeError:
+                        config_values[name] = raw_value
 
         configs = resolve_project_configs(
             project_root=self.settings_path.parent,
-            configs=self.project_config.get("configs", {}),
+            configs=config_values,
         )
+        self.settings.configs.clear()
         for name, value in configs.items():
             self.settings.add_config({"name": name, "value": value})
-
         return self.settings
 
     async def load_module(self) -> WatchModule:
