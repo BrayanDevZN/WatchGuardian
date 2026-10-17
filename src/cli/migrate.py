@@ -1,5 +1,6 @@
-from pathlib import Path
 import argparse
+import json
+from pathlib import Path
 
 from src.service.module import Settings, WatchDb
 from .project import add_project_argument, load_project
@@ -32,30 +33,40 @@ def migrate(subparser) -> None:
         )
 
 
-def project_database_path(
+def configure_project_database_path(
     project_path: str | Path,
     path: str | Path | None = None,
 ) -> Path:
-    """Resolve a project migration DB directory, defaulting inside its data folder."""
+    """Persist and create the project's SQLite directory."""
     project_directory = Path(project_path).expanduser().resolve()
-    if path is None:
-        return project_directory / "data"
+    settings_path = project_directory / "settings.json"
+    if not settings_path.is_file():
+        raise FileNotFoundError(f"Project settings file was not found: {settings_path}")
 
-    selected_path = Path(path).expanduser()
-    if not selected_path.is_absolute():
-        selected_path = project_directory / selected_path
-    return selected_path.resolve()
+    with settings_path.open(encoding="utf-8") as settings_file:
+        project_settings = json.load(settings_file)
+
+    requested_path = Path(path).expanduser() if path is not None else Path("data")
+    if requested_path.is_absolute():
+        database_directory = requested_path.resolve()
+        stored_path = str(database_directory)
+    else:
+        database_directory = (project_directory / requested_path).resolve()
+        stored_path = requested_path.as_posix()
+
+    database_directory.mkdir(parents=True, exist_ok=True)
+    project_settings.setdefault("configs", {})["path"] = stored_path
+    settings_path.write_text(
+        json.dumps(project_settings, indent=4) + "\n",
+        encoding="utf-8",
+    )
+    return database_directory
 
 
 async def run_migrate(args) -> None:
     if args.project is not None:
-        database_path = project_database_path(args.project, args.path)
-        database_path.mkdir(parents=True, exist_ok=True)
-
-        project = await load_project(
-            args.project,
-            config_overrides={"path": str(database_path)},
-        )
+        configure_project_database_path(args.project, args.path)
+        project = await load_project(args.project)
         control_db = project.watch_db
     else:
         env = args.env_file

@@ -68,6 +68,7 @@ def copy_watchguardian(
             "loglevel": "INFO",
             "configs": dict(DEFAULT_CONFIGS),
         }
+        (destination / "data").mkdir(parents=True, exist_ok=True)
         settings_path = destination / "settings.json"
         settings_path.write_text(
             json.dumps(project_settings, indent=4) + "\n",

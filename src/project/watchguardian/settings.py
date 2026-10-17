@@ -1,5 +1,6 @@
 """Local configuration for projects that use the public WatchGuardian modules."""
 
+from pathlib import Path
 from secrets import token_urlsafe
 
 from WatchGuardian import Settings, WatchLogs
@@ -7,7 +8,7 @@ from WatchGuardian import Settings, WatchLogs
 
 DEFAULT_CONFIGS = {
     # Local WatchDb
-    "path": None,
+    "path": "data",
     # Replicators / WatchBalance
     "replicator_name": "watchguardian-local",
     "replicator_urls": ["http://localhost:8000"],
@@ -16,6 +17,22 @@ DEFAULT_CONFIGS = {
     "replicator_limit": 60,
     "replicator_expires": 60,
 }
+
+
+def resolve_project_configs(
+    project_root: str | Path,
+    configs: dict[str, object],
+) -> dict[str, object]:
+    """Resolve project-relative SQLite paths from the generated project root."""
+    resolved_configs = dict(configs)
+    configured_path = resolved_configs.get("path") or "data"
+    database_directory = Path(configured_path).expanduser()
+    if not database_directory.is_absolute():
+        database_directory = Path(project_root).expanduser() / database_directory
+    database_directory = database_directory.resolve()
+    database_directory.mkdir(parents=True, exist_ok=True)
+    resolved_configs["path"] = str(database_directory)
+    return resolved_configs
 
 
 class ProjectSettings:

@@ -6,10 +6,10 @@ from pathlib import Path
 
 if __package__:
     from .module import WatchModule
-    from .settings import ProjectSettings
+    from .settings import ProjectSettings, resolve_project_configs
 else:
     from src.project.watchguardian.module import WatchModule
-    from src.project.watchguardian.settings import ProjectSettings
+    from src.project.watchguardian.settings import ProjectSettings, resolve_project_configs
 
 
 class ProjectApp:
@@ -43,7 +43,11 @@ class ProjectApp:
         )
         self.settings = project_settings.get()
 
-        for name, value in self.project_config.get("configs", {}).items():
+        configs = resolve_project_configs(
+            project_root=self.settings_path.parent,
+            configs=self.project_config.get("configs", {}),
+        )
+        for name, value in configs.items():
             self.settings.add_config({"name": name, "value": value})
 
         self.module = WatchModule(

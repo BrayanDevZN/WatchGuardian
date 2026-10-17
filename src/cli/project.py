@@ -16,7 +16,7 @@ def add_project_argument(parser, *, default=None) -> None:
     )
 
 
-async def load_project(\n    project_path: str | Path | None,\n    *,\n    config_overrides: dict[str, object] | None = None,\n):
+async def load_project(project_path: str | Path | None):
     """Import app from a project directory and return its loaded WatchModule."""
     if project_path is None:
         return None
@@ -57,13 +57,5 @@ async def load_project(\n    project_path: str | Path | None,\n    *,\n    confi
         raise AttributeError(
             f"Project entry point must define app with an async load_module(): {main_file}"
         )
-
-    if config_overrides:
-        project_config = getattr(app, "project_config", None)
-        if not isinstance(project_config, dict):
-            raise AttributeError(
-                f"Project entry point must expose a project_config dictionary: {main_file}"
-            )
-        project_config.setdefault("configs", {}).update(config_overrides)
 
     return await app.load_module()

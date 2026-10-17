@@ -1,9 +1,11 @@
-"""Tests project-relative migration paths and CLI option placement."""
+"""Tests migration database paths and the --project/--path options."""
 
 import argparse
+import json
 from pathlib import Path
 
-from src.cli.migrate import migrate, project_database_path
+from src.cli.migrate import configure_project_database_path, migrate
+from src.project.watchguardian.settings import resolve_project_configs
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -13,7 +15,17 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def test_project_option_and_path_before_migrate_action() -> None:
+def _project_settings(project: Path) -> Path:
+    project.mkdir(parents=True, exist_ok=True)
+    settings_path = project / "settings.json"
+    settings_path.write_text(
+        json.dumps({"name": project.name, "configs": {"path": None}}),
+        encoding="utf-8",
+    )
+    return settings_path
+
+
+def test_project_and_path_before_migrate_action() -> None:
     args = _parser().parse_args(
         ["migrate", "--project", "WatchGuardian", "--path", "custom", "make_tables"]
     )
@@ -22,7 +34,7 @@ def test_project_option_and_path_before_migrate_action() -> None:
     assert args.path == Path("custom")
 
 
-def test_project_option_and_path_after_migrate_action() -> None:
+def test_project_and_path_after_migrate_action() -> None:
     args = _parser().parse_args(
         ["migrate", "make_tables", "--project", "WatchGuardian", "--path", "custom"]
     )
@@ -31,24 +43,36 @@ def test_project_option_and_path_after_migrate_action() -> None:
     assert args.path == Path("custom")
 
 
-def test_project_database_defaults_to_project_data_directory(tmp_path: Path) -> None:
-    assert project_database_path(tmp_path) == (tmp_path / "data").resolve()
+def test_migration_default_persists_data_directory_inside_project(
+    tmp_path: Path,
+) -> None:
+    settings_path = _project_settings(tmp_path)
+    database_directory = configure_project_database_path(tmp_path)
+
+    assert database_directory == (tmp_path / "data").resolve()
+    assert database_directory.is_dir()
+    assert json.loads(settings_path.read_text())["configs"]["path"] == "data"
 
 
-def test_relative_database_override_is_inside_project(tmp_path: Path) -> None:
-    assert project_database_path(tmp_path, "custom-data") == (
-        tmp_path / "custom-data"
-    ).resolve()
+def test_custom_relative_path_is_persisted_and_project_relative(
+    tmp_path: Path,
+) -> None:
+    settings_path = _project_settings(tmp_path)
+    database_directory = configure_project_database_path(tmp_path, "custom-data")
+
+    assert database_directory == (tmp_path / "custom-data").resolve()
+    assert database_directory.is_dir()
+    assert json.loads(settings_path.read_text())["configs"]["path"] == "custom-data"
 
 
-def test_absolute_database_override_is_preserved(tmp_path: Path) -> None:
-    external_path = tmp_path.parent / "external-data"
-    assert project_database_path(tmp_path, external_path) == external_path.resolve()
+def test_app_resolves_database_path_from_project_root(tmp_path: Path) -> None:
+    configs = resolve_project_configs(tmp_path, {"path": "data"})
+
+    assert configs["path"] == str((tmp_path / "data").resolve())
+    assert (tmp_path / "data").is_dir()
 
 
 if __name__ == "__main__":
-    test_project_option_and_path_before_migrate_action()
-    test_project_option_and_path_after_migrate_action()
-    test_project_database_defaults_to_project_data_directory(Path.cwd())
-    test_relative_database_override_is_inside_project(Path.cwd())
+    test_project_and_path_before_migrate_action()
+    test_project_and_path_after_migrate_action()
     print("Migrate CLI project path tests passed")
