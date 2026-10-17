@@ -1,8 +1,6 @@
 """CLI para criar e executar o balanceador WatchGuardian."""
 
-import argparse
 import importlib
-from collections.abc import Callable
 
 import uvicorn
 
@@ -78,8 +76,13 @@ async def run_balance(args) -> None:
     try:
         replicas = _load_target(args.target)
     except (ImportError, AttributeError, TypeError, ValueError) as error:
-        raise SystemExit(f"Não foi possível carregar o balanceador: {error}") from error
+        raise SystemExit(
+            f"Não foi possível carregar o balanceador: {error}"
+        ) from error
 
     app = WatchBalance(replicas=replicas).run()
     logger.success(f"Balance iniciado em http://{args.host}:{args.port}")
-    uvicorn.run(app, host=args.host, port=args.port)
+
+    config = uvicorn.Config(app, host=args.host, port=args.port)
+    server = uvicorn.Server(config)
+    await server.serve()
