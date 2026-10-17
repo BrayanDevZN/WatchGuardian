@@ -1,11 +1,16 @@
 """Comandos CLI para executar e consultar o servidor."""
 
 import argparse
+import shlex
+import sys
+
+import uvicorn
 
 from src.logs.module import Logs
 from src.service.module import ClientHttp, Cmd, Settings
 
 from .migrate import run_migrate
+from .project import add_project_argument, load_project
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -21,24 +26,23 @@ def server(subparser) -> None:
     )
 
     run_parser = server_cmd.add_parser("run")
-    run_parser.add_argument("app")
+    run_parser.add_argument("app", nargs="?")
+    add_project_argument(run_parser)
     run_parser.add_argument("--host", default="127.0.0.1")
     run_parser.add_argument("--port", type=int, default=8000)
     run_parser.add_argument("--detached", action="store_true")
 
     logs_parser = server_cmd.add_parser("logs")
+    add_project_argument(logs_parser)
     logs_parser.add_argument("--token", default=None)
 
     obs_parser = server_cmd.add_parser("obs")
+    add_project_argument(obs_parser)
     obs_parser.add_argument("--token", default=None)
 
 
 def _settings(env_file: str | None) -> Settings:
-    return (
-        Settings(env_file=env_file)
-        if env_file is not None
-        else Settings()
-    )
+    return Settings(env_file=env_file) if env_file is not None else Settings()
 
 
 def _token(settings: Settings, token: str | None) -> str:
@@ -86,14 +90,44 @@ def _print_obs(item: dict) -> None:
 
 
 async def run_server(args) -> None:
-    settings = _settings(args.env_file)
+    if args.command == "run" and args.detached and args.project is not None:
+        command_parts = [
+            sys.executable,
+            "-m",
+            "src.cli.main",
+            "server",
+            "run",
+            "--project",
+            str(args.project),
+            "--host",
+            args.host,
+            "--port",
+            str(args.port),
+        ]
+        process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
+        logger.success(f"Project server started in detached mode. PID: {process.pid}")
+        return
+
+    project = await load_project(args.project)
 
     if args.command == "run":
+        if project is not None:
+            if not args.detached and not project.http:
+                await project.watch_db.create_tables()
+
+            app = project.server_app
+            config = uvicorn.Config(app, host=args.host, port=args.port)
+            await uvicorn.Server(config).serve()
+            return
+
+        if args.app is None:
+            raise SystemExit("Provide an ASGI app target or pass --project.")
+
         migrate_args = argparse.Namespace(
             env_file=args.env_file,
+            project=None,
             command="make_tables",
         )
-
         await run_migrate(migrate_args)
 
         command = (
@@ -105,19 +139,24 @@ async def run_server(args) -> None:
         if args.detached:
             process = Cmd.detached(command)
             logger.success(
-                f"Servidor iniciado em detached. PID: {process.pid}"
+                f"Server started in detached mode. PID: {process.pid}"
             )
             return
 
         Cmd.run(command)
         return
 
-    token = _token(
-        settings=settings,
-        token=args.token,
-    )
-
-    client = ClientHttp(settings=settings)
+    if project is not None:
+        token = (
+            args.token
+            if args.token is not None
+            else project.settings.required_secrets("token")
+        )
+        client = project.client_http
+    else:
+        settings = _settings(args.env_file)
+        token = _token(settings=settings, token=args.token)
+        client = ClientHttp(settings=settings)
 
     if args.command == "logs":
         data = await client.logs(token=token).get_log()
