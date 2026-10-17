@@ -24,10 +24,62 @@ class ProjectApp:
         self.local = self.project_config.get("local", True)
         self.http = self.project_config.get("http")
         self.settings = None
-        self.module = None
+        self.module: WatchModule | None = None
+
+    def _loaded_module(self) -> WatchModule:
+        if self.module is None:
+            raise RuntimeError(
+                "Project modules are not loaded yet; call "
+                "'await app.load_module()' before accessing them."
+            )
+        return self.module
+
+    @property
+    def watch_db(self):
+        return self._loaded_module().watch_db
+
+    @property
+    def watch_logs(self):
+        return self._loaded_module().watch_logs
+
+    @property
+    def watch_obs(self):
+        return self._loaded_module().watch_obs
+
+    @property
+    def watch_auth(self):
+        return self._loaded_module().watch_auth
+
+    @property
+    def cache(self):
+        return self._loaded_module().cache
+
+    @property
+    def client_http(self):
+        return self._loaded_module().client_http
+
+    @property
+    def watch_server(self):
+        return self._loaded_module().watch_server
+
+    @property
+    def server_app(self):
+        return self._loaded_module().server_app
+
+    @property
+    def replicators(self):
+        return self._loaded_module().replicators
+
+    @property
+    def watch_balance(self):
+        return self._loaded_module().watch_balance
+
+    @property
+    def balance_app(self):
+        return self._loaded_module().balance_app
 
     def __getattr__(self, name: str):
-        """Forward module attributes so they are available directly on app."""
+        """Forward other module attributes for backward compatibility."""
         module = self.__dict__.get("module")
         if module is None:
             raise AttributeError(
@@ -71,7 +123,7 @@ class ProjectApp:
 
         return self.settings
 
-    async def load_module(self):
+    async def load_module(self) -> WatchModule:
         """Apply project settings, initialize modules, and return WatchModule."""
         self.module = WatchModule(
             settings=self.load_settings(),
