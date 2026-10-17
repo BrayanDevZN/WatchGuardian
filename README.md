@@ -230,7 +230,7 @@ watch_db = await WatchDb(settings=settings)
 logs = WatchLogs(loglevel="INFO", watch_db=watch_db)
 obs = WatchObs(logs=logs, watch_db=watch_db)
 
-async with obs.begin("process-data"):
+async with obs.begin(name="process-data", group="orders"):
     await process_data()
 ```
 
@@ -627,7 +627,199 @@ watchguardian server logs --project ./apps/MinhaApp
 watchguardian server obs --project ./apps/MinhaApp
 ```
 
+
 ---
+
+# Referência detalhada da API pública
+
+Esta seção descreve os construtores e métodos públicos disponíveis nos módulos exportados por `WatchGuardian`. Métodos iniciados por `_` são auxiliares internos e não fazem parte da API pública estável.
+
+## Configuração: `Settings`
+
+Importação: `from WatchGuardian import Settings`
+
+- `Settings(env_file: str | None = None)`: cria os dicionários `secrets` e `configs`. Se receber `env_file`, carrega esse arquivo; caso contrário, tenta carregar o `.env` do diretório atual.
+- `add_secret(secrets: str | list[str]) -> None`: registra uma ou várias chaves para leitura do ambiente. Se uma variável de ambiente existir, ela prevalece; se não existir, preserva um valor que já estava salvo em `secrets`.
+- `get_secret(secret_name: str) -> Any`: retorna o valor da chave ou `None` se ela não estiver registrada.
+- `required_secrets(secret: str) -> Any`: retorna o valor obrigatório. Lança `SettingsNotFoundEnv` se a chave estiver ausente, vazia ou com valor `None`.
+- `add_config(configs: dict | list[dict]) -> None`: adiciona configurações no formato `{"name": ..., "value": ...}`; aceita um item ou uma lista.
+- `get_config(name: str) -> Any`: retorna a configuração ou `None` se não estiver registrada.
+- `required_config(name: str) -> Any`: retorna a configuração e lança `SettingsNotFoundConfig` se o nome não existir. A verificação é pela existência da chave; um valor registrado como `None` é permitido.
+
+Se o arquivo de ambiente informado não existir, o construtor lança `SettingsNotFoundEnvironment`.
+
+## Logs: `WatchLogs`
+
+Importação: `from WatchGuardian import WatchLogs`
+
+- `WatchLogs(loglevel="INFO", watch_db=None)`: escolhe o nível mínimo exibido e, opcionalmente, conecta a instância de `WatchDb` para persistir os registros.
+- `debug(text)`, `info(text)`, `success(text)`, `warning(text)`, `error(text)` e `critical(text)`: escrevem um registro no nível correspondente e retornam o registro criado ou `None` quando ele não passa pelo filtro de nível. Quando `watch_db` foi informado, registros exibidos são enviados ao banco em uma tarefa em background.
+
+Os níveis aceitos no construtor são `DEBUG`, `INFO`, `SUCCESS`, `WARNING`, `ERROR` e `CRITICAL`.
+
+## Observabilidade: `WatchObs`
+
+Importação: `from WatchGuardian import WatchObs`
+
+- `WatchObs(logs, watch_db)`: recebe um `WatchLogs` e um `WatchDb` compartilhados.
+- `begin(name: str, group: str) -> ObsContext`: devolve um gerenciador de contexto assíncrono. Ao entrar, cria um registro pendente; ao sair, atualiza o registro com duração, conteúdo e resultado. O parâmetro `group` é obrigatório.
+
+```python
+async with obs.begin(name="process-data", group="orders"):
+    await process_data()
+```
+
+O objeto de contexto oferece os métodos herdados de controle:
+
+- `task(name, group) -> UUID`: inicia manualmente um registro pendente e retorna seu identificador público.
+- `commit(content, error=False) -> None`: finaliza o registro como `success` ou `failure`, medindo a duração desde `task`. Use `error=True` para registrar falha.
+- `close() -> None`: remove o registro atual.
+
+Em geral, prefira `begin()`: o contexto chama `task` e `commit` automaticamente, inclusive ao propagar uma exceção ocorrida dentro do bloco.
+
+## Autenticação: `WatchAuth`
+
+Importação: `from WatchGuardian import WatchAuth`
+
+- `WatchAuth(settings=None)`: obtém a chave JWT `secret` de `Settings`. Para criar ou validar tokens, forneça uma chave válida em `Settings`.
+- `secret() -> str`: gera uma chave aleatória usando UUIDs; não a salva automaticamente no ambiente ou em `Settings`.
+- `user_token(payload=None) -> str`: cria um JWT do tipo `user_token`, adicionando expiração de uma hora a partir do momento da criação.
+- `refresh_token(payload=None) -> str`: cria um JWT do tipo `refresh_token` e remove qualquer `exp` recebido no payload.
+- `encode(payload) -> str`: método herdado que codifica o payload com HS256.
+- `decode(token) -> dict`: método herdado que valida e decodifica o JWT, retornando o payload. Erros de validação são propagados.
+
+`user_token`, `refresh_token`, `encode` e `decode` são assíncronos.
+
+## Persistência: `WatchDb`
+
+Importação: `from WatchGuardian.database import WatchDb`
+
+- `WatchDb(settings, http=False)`: cria acesso local ao banco quando `http` é falso ou `None`; com `http=True`, encaminha operações para um servidor via HTTP e requer o secret `token`. A instância é awaitable: use `db = await WatchDb(settings)` para inicializá-la.
+- `create_tables() -> None`: cria as tabelas locais se ainda não existirem.
+- `reset_tables() -> None`: apaga os registros das tabelas locais de logs e observabilidade.
+- `drop_tables() -> None`: remove as tabelas locais.
+- `logs`: serviço CRUD de logs.
+- `observability`: serviço CRUD de observabilidade.
+- `cache`: instância de `CacheManage` quando `host` e `port` estão configurados; caso contrário, `None`.
+
+Os três métodos de tabela só funcionam no modo local; no modo HTTP lançam `RuntimeError`.
+
+### `watch_db.logs`
+
+Os métodos são assíncronos:
+
+- `create(log: str, status: str) -> dict`: grava um log.
+- `select(id=None, public_id=None) -> dict | list[dict] | None`: lista todos os registros se nenhum identificador for passado, ou busca pelo ID numérico ou público.
+- `update(id=None, public_id=None, log=None, status=None) -> dict | None`: atualiza os campos enviados. Informe um dos identificadores e pelo menos um campo.
+- `delete(id=None, public_id=None) -> dict | None`: remove pelo ID numérico ou público.
+
+### `watch_db.observability`
+
+Os métodos são assíncronos:
+
+- `create(group, task, status, content, latency, public_id=None) -> dict`: cria um registro; gera um identificador público se não receber um.
+- `select(id=None, public_id=None, group=None) -> dict | list[dict] | None`: lista registros ou filtra por identificador e/ou grupo.
+- `update(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None) -> dict | None`: atualiza os campos fornecidos; exige um identificador e pelo menos um campo para alterar.
+- `delete(id=None, public_id=None) -> dict | None`: remove pelo ID numérico ou público.
+
+Os dois serviços usam cache Redis quando `watch_db.cache` está disponível. Se não houver cache configurado, operam diretamente no banco ou no servidor HTTP.
+
+## Cache: `CacheManage`
+
+Importação: `from WatchGuardian.database import CacheManage`
+
+- `CacheManage(settings)`: conecta ao Redis usando os secrets obrigatórios `host` e `port`; `password` é opcional.
+- `incr(key, time=None) -> int`: incrementa um contador e aplica TTL em segundos. O TTL padrão é 60 segundos.
+- `hash(key, data, time=None) -> None`: grava os pares do dicionário em um hash Redis e aplica o TTL, também de 60 segundos por padrão.
+- `read(key, hash=False) -> Any`: lê um valor simples; com `hash=True`, lê o hash inteiro.
+- `delete(key) -> bool`: apaga a chave e retorna se alguma chave foi removida.
+- `publish(channel, event) -> int`: publica uma mensagem e retorna quantos assinantes a receberam.
+- `listen(channel) -> AsyncIterator[Any]`: assina o canal e produz mensagens conforme chegam; o canal é desassinado quando a iteração termina ou é cancelada.
+
+Todos os métodos Redis acima são assíncronos.
+
+## Servidor: `WatchServer`
+
+Importação: `from WatchGuardian.server import WatchServer`
+
+- `WatchServer(settings)`: prepara uma aplicação FastAPI com rotas de logs, observabilidade, autenticação e health check, além dos middlewares configurados.
+- `run() -> FastAPI`: instala CORS, rotas e middleware e retorna a aplicação ASGI para executar com Uvicorn.
+
+## Cliente: `ClientHttp`
+
+Importação: `from WatchGuardian.server import ClientHttp`
+
+- `ClientHttp(settings=None, url=None)`: cria um cliente para a URL informada, para o secret `url` de `Settings`, ou para `http://localhost:8000` nessa ordem.
+- `logs(token) -> LogsClient`: cria um cliente de operações de logs autenticado pelo token.
+- `obs(token) -> ObsClient`: cria um cliente de operações de observabilidade autenticado pelo token.
+- `auth(user_token, refresh_token) -> AuthClient`: cria um cliente de autenticação com os dois tokens.
+- `health() -> bool`: consulta `/health` e retorna se o servidor está acessível.
+
+Os métodos de operação HTTP são assíncronos:
+
+- Em `client.logs(token)`: `create_log(status, log)`, `get_log(id=None, public_id=None)`, `update_log(id=None, public_id=None, log=None, status=None)` e `delete_log(id=None, public_id=None)`.
+- Em `client.obs(token)`: `create_obs(group, task, status, content, latency)`, `get_obs(id=None, public_id=None, group=None)`, `update_obs(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None)` e `delete_obs(id=None, public_id=None)`.
+- Em `client.auth(user_token, refresh_token)`: `refresh()` envia os tokens para a rota de renovação.
+
+Os clientes retornam o JSON da resposta. Quando a resposta HTTP tem status 400 ou superior, registram o erro e retornam `None`.
+
+## Balanceamento: `Replicator`, `Replicators` e `WatchBalance`
+
+Importação: `from WatchGuardian.balance import Replicator, Replicators, WatchBalance`
+
+### `Replicator`
+
+- `Replicator(url, cache, limit, name, paths="*", methods="*", limit_expires=60)`: representa uma réplica remota. `paths` aceita `*` ou caminhos `logs` e `obs`; `methods` define métodos aceitos e pode ser `*`.
+- `valid() -> bool`: valida a configuração e verifica `/health` na instância remota. O balanceador usa esse resultado para escolher o destino.
+
+### `Replicators`
+
+- `Replicators(settings)`: lê `replicator_name`, `replicator_urls`, `replicator_paths`, `replicator_methods`, `replicator_limit` e `replicator_expires` de `Settings`; também cria a conexão de cache usada pelas réplicas.
+- `get_replicas() -> list[Replicator]`: constrói e retorna uma réplica para cada URL configurada.
+
+### `WatchBalance`
+
+- `WatchBalance(replicas, timeout=60)`: recebe `Replicators` ou uma lista de `Replicator`. O timeout define por quanto tempo tenta encontrar uma réplica válida.
+- `run() -> FastAPI`: instala o middleware seletor e as rotas do balanceador e retorna a aplicação ASGI. As requisições são redirecionadas com status 307; se não houver destino válido antes do timeout, retorna erro 501.
+
+Nota sobre os parâmetros `limit` e `limit_expires`: eles são armazenados pela classe `Replicator`, mas o fluxo atual de validação não incrementa nem consulta o contador. Portanto, não use esses parâmetros como garantia de rate limit nesta versão.
+
+## Projeto: `ProjectSettings`, `WatchModule` e `ProjectApp`
+
+Esses módulos pertencem ao template de projeto em `src/project/watchguardian/`; a função de cópia fica em `src/project/file.py`.
+
+### `ProjectSettings`
+
+- `ProjectSettings(env_file=None, local=False)`: prepara um `Settings` para o projeto.
+- `local_secret() -> None`: registra os secrets consumidos pelos módulos e preenche defaults locais ausentes.
+- `local_config() -> None`: registra as configurações padrão de banco e réplicas, sem substituir valores já definidos.
+- `get() -> Settings`: retorna as configurações; quando `local=True`, primeiro executa `local_secret` e `local_config`.
+
+### `WatchModule`
+
+O agregador compartilha as mesmas configurações e dependências entre os módulos.
+
+- `WatchModule(settings, http=None, loglevel="INFO")`: prepara os atributos para as instâncias dos módulos.
+- `database() -> WatchDb`: inicializa o banco uma vez, conecta o cache e prepara o logger com persistência.
+- `logs() -> WatchLogs`: retorna logs conectados ao banco compartilhado.
+- `observability() -> WatchObs`: cria a observabilidade usando os logs e banco compartilhados.
+- `auth() -> WatchAuth`: retorna autenticação configurada com os secrets compartilhados.
+- `cache_module() -> CacheManage | None`: retorna o cache do banco, se estiver configurado.
+- `client() -> ClientHttp`: retorna o cliente HTTP compartilhado.
+- `server() -> WatchServer`: prepara o servidor e sua aplicação FastAPI em `server_app`.
+- `balance() -> WatchBalance`: prepara as réplicas, o balanceador e sua aplicação FastAPI em `balance_app`.
+- `load_modules() -> WatchModule`: inicializa todos os módulos e retorna o próprio agregador.
+
+Os métodos de inicialização são idempotentes para as instâncias armazenadas: chamadas seguintes retornam o objeto já criado.
+
+### `ProjectApp` e criação do projeto
+
+- `ProjectApp()`: lê o `settings.json` ao lado de `main.py`.
+- `load_module() -> WatchModule`: resolve o `env_file` relativo à pasta do projeto, aplica configurações do JSON, carrega todos os módulos e retorna o agregador em `app.module`.
+- `copy_watchguardian(path=None, name=None, env_file=None) -> Path`: copia o template para `path/name`, gera o `settings.json` no destino e retorna o caminho criado. `path=None` usa o diretório atual; `name=None` usa `WatchGuardian`; o arquivo `file.py` não é copiado junto com o template.
+
+A CLI `startproject` chama essa função. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
+
 
 ## Exemplo rápido da versão pública
 
@@ -664,7 +856,7 @@ async def main() -> None:
 
     logs.success("WatchGuardian iniciado")
 
-    async with obs.begin("example-task"):
+    async with obs.begin(name="example-task", group="examples"):
         await asyncio.sleep(0.2)
 
     print(token)
