@@ -1,25 +1,25 @@
-from ..logs.module import Logs
-logger =Logs(loglevel="SUCCESS")
-import os
-"""
-Configura como vai ser a url do banco
-"""
+"""Database URL helpers."""
 
-def config_url(url:str|None=None, path:str|None=None) -> str:
+from pathlib import Path
 
-     if url is not None:
+from sqlalchemy.engine import URL
 
-            return url 
 
-     if path is None:
+def config_url(url: str | None = None, path: str | None = None) -> str:
+    """Return a configured database URL or a project-local SQLite URL.
 
-            return "sqlite+aiosqlite:///watch.db"
+    ``path`` is the directory that will contain ``watch.db``. It is created
+    when missing, so a fresh project can start without a separate migration
+    setup step.
+    """
+    if url and url.strip():
+        return url.strip()
 
-     if not os.path.exists(path):
+    database_directory = Path(path or "data").expanduser().resolve()
+    database_directory.mkdir(parents=True, exist_ok=True)
+    database_file = database_directory / "watch.db"
 
-            raise FileNotFoundError(f"{path} não existe")
-
-     return f"sqlite+aiosqlite:///{path if "/" == path[-1] else path + "/"}watch.db"
-
-        
-
+    return URL.create(
+        drivername="sqlite+aiosqlite",
+        database=str(database_file),
+    ).render_as_string(hide_password=False)
