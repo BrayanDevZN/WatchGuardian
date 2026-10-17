@@ -18,10 +18,16 @@ def copy_watchguardian(
     logger = WatchLogs()
     source = Path(__file__).resolve().parents[3] / "WatchGuardian"
     destination_root = Path(path) if path is not None else Path.cwd()
-    folder_name = name or "WatchGuardian"
+    folder_name = "WatchGuardian" if name is None else name
 
-    if Path(folder_name).name != folder_name or folder_name in {".", ".."}:
-        raise ValueError("name must be a folder name, not a path.")
+    if (
+        not folder_name
+        or Path(folder_name).name != folder_name
+        or folder_name in {".", ".."}
+    ):
+        error = ValueError("name must be a non-empty folder name, not a path.")
+        logger.error(str(error))
+        raise error
 
     destination = destination_root / folder_name
 
@@ -37,10 +43,10 @@ def copy_watchguardian(
         logger.error(str(error))
         raise error
 
-    destination_root.mkdir(parents=True, exist_ok=True)
     logger.info(f"Copying WatchGuardian to '{destination}'.")
 
     try:
+        destination_root.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source, destination)
     except Exception as error:
         logger.error(f"Failed to copy WatchGuardian: {error}")
