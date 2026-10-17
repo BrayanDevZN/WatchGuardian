@@ -23,8 +23,17 @@ def startproject(subparsers) -> None:
         default=None,
         help="Name of the copied WatchGuardian folder (defaults to WatchGuardian)",
     )
+    parser.add_argument(
+        "--env-file",
+        default=None,
+        help="Environment file used by the generated project (defaults to local settings)",
+    )
 
 
 def run_startproject(args) -> Path:
-    """Copy WatchGuardian using the parsed path and name arguments."""
-    return copy_watchguardian(path=args.path, name=args.name)
+    """Copy WatchGuardian and generate the project configuration."""
+    return copy_watchguardian(
+        path=args.path,
+        name=args.name,
+        env_file=args.env_file,
+    )
