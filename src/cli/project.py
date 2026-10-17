@@ -32,7 +32,18 @@ async def load_project(project_path: str | Path | None):
     if not settings_file.is_file():
         raise FileNotFoundError(f"Project settings file was not found: {settings_file}")
 
-    module_name = f"watchguardian_project_{abs(hash(directory))}"
+    package_name = f"watchguardian_project_{abs(hash(directory))}"
+    package = ModuleType(package_name)
+    package.__path__ = [str(directory)]
+    package.__package__ = package_name
+    sys.modules[package_name] = package
+
+    project_directory = str(directory)
+    if project_directory in sys.path:
+        sys.path.remove(project_directory)
+    sys.path.insert(0, project_directory)
+
+    module_name = f"{package_name}.main"
     spec = importlib.util.spec_from_file_location(module_name, main_file)
     if spec is None or spec.loader is None:
         raise ImportError(f"Could not import project entry point: {main_file}")
