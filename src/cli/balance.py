@@ -87,9 +87,9 @@ def _load_target(target: str):
     return value
 
 
-def _replicas(target: str) -> list[Replicator]:
+async def _replicas(target: str) -> list[Replicator]:
     value = _load_target(target)
-    return value.get_replicas_sync() if isinstance(value, Replicators) else value
+    return await value.get_replicas() if isinstance(value, Replicators) else value
 
 
 async def _healthy_replicas(replicas: list[Replicator]) -> list[Replicator]:
@@ -128,7 +128,7 @@ def _get_token(token: str | None) -> str:
 
 async def run_balance(args) -> None:
     try:
-        replicas = _replicas(args.target)
+        replicas = await _replicas(args.target)
     except (ImportError, AttributeError, TypeError, ValueError) as error:
         raise SystemExit(
             f"Não foi possível carregar as réplicas: {error}"
