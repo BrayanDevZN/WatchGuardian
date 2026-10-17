@@ -23,7 +23,7 @@ def copy_watchguardian(
     logger = WatchLogs()
     template = Path(__file__).resolve().parent / "watchguardian"
     destination_root = Path(path) if path is not None else Path.cwd()
-    folder_name = "myproject" if name is None else name.strip().lower()
+    folder_name = "watchguardian" if name is None else name.strip().lower()
 
     if not folder_name.isidentifier() or keyword.iskeyword(folder_name):
         error = ValueError(
@@ -33,10 +33,10 @@ def copy_watchguardian(
         logger.error(str(error))
         raise error
 
-    if folder_name == "watchguardian":
+    if name is not None and folder_name == "watchguardian":
         error = ValueError(
-            "'watchguardian' is reserved for the WatchGuardian framework. "
-            "Choose another project name."
+            "The name 'watchguardian' is reserved for the default project folder. "
+            "Omit --name to use it, or choose another name."
         )
         logger.error(str(error))
         raise error
