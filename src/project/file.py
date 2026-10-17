@@ -27,8 +27,8 @@ class ProjectApp:
             self.project_config = json.load(settings_file)
 
         self.name = self.project_config.get("name", "WatchGuardian")
-        self.local = self.project_config.get("local", True)
-        self.http = self.project_config.get("http")
+        self.local = True
+        self.http = None
         self.settings = None
         self.module = None
 
@@ -39,6 +39,9 @@ class ProjectApp:
             env_path = Path(env_file)
             if not env_path.is_absolute():
                 env_file = str(self.settings_path.parent / env_path)
+
+        self.local = env_file is None
+        self.http = None if self.local else True
 
         project_settings = ProjectSettings(
             env_file=env_file,
