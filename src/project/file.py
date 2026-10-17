@@ -24,12 +24,21 @@ class ProjectApp:
         with self.settings_path.open(encoding="utf-8") as settings_file:
             self.settings = json.load(settings_file)
 
+        self.name = self.settings.get("name", "WatchGuardian")
+        self.local = self.settings.get("local", True)
+        self.http = self.settings.get("http")
         self.module = None
 
     async def load_module(self):
         """Initialize modules and return the complete WatchModule object."""
+        env_file = self.settings.get("env_file")
+        if env_file is not None:
+            env_path = Path(env_file)
+            if not env_path.is_absolute():
+                env_file = str(self.settings_path.parent / env_path)
+
         self.module = await watch_manage(
-            env_file=self.settings.get("env_file"),
+            env_file=env_file,
             loglevel=self.settings.get("loglevel", "INFO"),
         )
         return self.module
@@ -91,7 +100,7 @@ def copy_watchguardian(
         use_local_settings = env_file is None
         project_settings = {
             "name": folder_name,
-            "path": str(destination_root.resolve()),
+            "path": str(destination.resolve()),
             "env_file": str(env_file) if env_file is not None else None,
             "local": use_local_settings,
             "http": None if use_local_settings else True,
