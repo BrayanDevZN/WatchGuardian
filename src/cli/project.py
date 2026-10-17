@@ -6,12 +6,12 @@ from pathlib import Path
 from types import ModuleType
 
 
-def add_project_argument(parser) -> None:
+def add_project_argument(parser, *, default=None) -> None:
     """Add the optional generated-project directory argument."""
     parser.add_argument(
         "--project",
         type=Path,
-        default=None,
+        default=default,
         help="Generated project directory containing main.py and settings.json",
     )
 

@@ -1,4 +1,10 @@
 "Inicia a api"
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from src.auth.token import logger
 from src.core.module import Settings
 from src.service.cache import CacheManage
@@ -9,16 +15,12 @@ from .handles.auth import auth_router
 from .handles.health import health_router
 from .handles.ws import realtime_router
 from .events import RealtimeEvents
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 
 class Server:
 
     def __init__(self, settings: Settings) -> None:
-        self.app = FastAPI()
         self.routes = [logs_router, obs_router, auth_router, health_router, realtime_router]
-        self.app.state.settings = settings
         self.settings = settings
         self.settings.add_secret(["host", "port"])
         self.cache = None
@@ -28,10 +30,18 @@ class Server:
             except Exception as error:
                 logger.warning(f"Redis unavailable; using local event delivery: {error}")
         self.events = RealtimeEvents(cache=self.cache)
+        self.app = FastAPI(lifespan=self._lifespan)
+        self.app.state.settings = settings
         self.app.state.allowed_origins = []
         self.app.state.realtime_events = self.events
-        self.app.add_event_handler("startup", self.events.start)
-        self.app.add_event_handler("shutdown", self.events.stop)
+
+    @asynccontextmanager
+    async def _lifespan(self, app: FastAPI) -> AsyncIterator[None]:
+        await self.events.start()
+        try:
+            yield
+        finally:
+            await self.events.stop()
 
     def _cors(self) -> None:
         logger.info("Creating CORS configuration...")
