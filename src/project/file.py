@@ -1,4 +1,4 @@
-"""Copy the WatchGuardian project template to a chosen location."""
+"""Copy the WatchGuardian project template and create project settings."""
 
 import json
 import shutil
@@ -14,7 +14,7 @@ def copy_watchguardian(
     name: str | None = None,
     env_file: str | Path | None = None,
 ) -> Path:
-    """Copy the complete project template and apply its initial settings.
+    """Copy the project template and generate settings.json in the new folder.
 
     If path is omitted, the current working directory is used. If name is
     omitted, the destination folder is named WatchGuardian. The optional
@@ -54,34 +54,17 @@ def copy_watchguardian(
         destination_root.mkdir(parents=True, exist_ok=True)
         shutil.copytree(template, destination)
 
-        settings_path = destination / "settings.json"
-        if settings_path.is_file():
-            project_settings = json.loads(
-                settings_path.read_text(encoding="utf-8")
-            )
-        else:
-            project_settings = {
-                "name": "WatchGuardian",
-                "path": None,
-                "env_file": None,
-                "local": True,
-                "http": None,
-                "loglevel": "INFO",
-                "configs": dict(DEFAULT_CONFIGS),
-            }
-
         use_local_settings = env_file is None
-        project_settings.update(
-            {
-                "name": folder_name,
-                "path": str(destination.resolve()),
-                "env_file": str(env_file) if env_file is not None else None,
-                "local": use_local_settings,
-                "http": None if use_local_settings else True,
-            }
-        )
-        project_settings.setdefault("configs", DEFAULT_CONFIGS)
-
+        project_settings = {
+            "name": folder_name,
+            "path": str(destination.resolve()),
+            "env_file": str(env_file) if env_file is not None else None,
+            "local": use_local_settings,
+            "http": None if use_local_settings else True,
+            "loglevel": "INFO",
+            "configs": dict(DEFAULT_CONFIGS),
+        }
+        settings_path = destination / "settings.json"
         settings_path.write_text(
             json.dumps(project_settings, indent=4) + "\n",
             encoding="utf-8",
