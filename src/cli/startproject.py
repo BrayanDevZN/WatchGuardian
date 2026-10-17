@@ -6,12 +6,8 @@ from pathlib import Path
 from src.project.file import copy_watchguardian
 
 
-def startproject(subparsers) -> None:
-    """Register the startproject command and its arguments."""
-    parser = subparsers.add_parser(
-        "startproject",
-        help="Copy the public WatchGuardian package into a project directory",
-    )
+def _add_arguments(parser: argparse.ArgumentParser) -> None:
+    """Register startproject command arguments on a parser."""
     parser.add_argument(
         "--path",
         type=Path,
@@ -30,6 +26,15 @@ def startproject(subparsers) -> None:
     )
 
 
+def startproject(subparsers) -> None:
+    """Register the startproject subcommand."""
+    parser = subparsers.add_parser(
+        "startproject",
+        help="Copy the public WatchGuardian package into a project directory",
+    )
+    _add_arguments(parser)
+
+
 def run_startproject(args) -> Path:
     """Copy WatchGuardian and generate the project configuration."""
     return copy_watchguardian(
@@ -37,3 +42,14 @@ def run_startproject(args) -> Path:
         name=args.name,
         env_file=args.env_file,
     )
+
+
+def main() -> None:
+    """Run the standalone watchguardian-startproject command."""
+    parser = argparse.ArgumentParser(
+        prog="watchguardian-startproject",
+        description="Create a project from the WatchGuardian template",
+    )
+    _add_arguments(parser)
+    args = parser.parse_args()
+    run_startproject(args)

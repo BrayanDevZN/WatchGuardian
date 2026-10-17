@@ -32,6 +32,7 @@ Repository = "https://github.com/BrayanDevZN/WatchGuardian"
 
 [project.scripts]
 watchguardian = "src.cli.main:main"
+watchguardian-startproject = "src.cli.startproject:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
