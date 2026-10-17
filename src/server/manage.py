@@ -7,6 +7,8 @@ from .handles.logs import logs_router
 from .handles.obs import obs_router
 from .handles.auth import auth_router
 from .handles.health import health_router
+from .routes import realtime_router
+from .events import RealtimeEvents
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,16 +17,30 @@ class Server:
 
     def __init__(self, settings: Settings) -> None:
         self.app = FastAPI()
-        self.routes = [logs_router, obs_router, auth_router, health_router]
+        self.routes = [logs_router, obs_router, auth_router, health_router, realtime_router]
         self.app.state.settings = settings
         self.settings = settings
-        self.cache = CacheManage(settings=self.settings)
+        self.settings.add_secret(["host", "port"])
+        self.cache = None
+        if self.settings.get_secret("host") and self.settings.get_secret("port"):
+            try:
+                self.cache = CacheManage(settings=self.settings)
+            except Exception as error:
+                logger.warning(f"Redis unavailable; using local event delivery: {error}")
+        self.events = RealtimeEvents(cache=self.cache)
+        self.app.state.allowed_origins = []
+        self.app.state.realtime_events = self.events
+        self.app.add_event_handler("startup", self.events.start)
+        self.app.add_event_handler("shutdown", self.events.stop)
 
     def _cors(self) -> None:
         logger.info("Creating CORS configuration...")
 
         origin = self.settings.required_secrets(secret="origin")
         self.origin = list(origin) if "[" in origin else origin
+        self.app.state.allowed_origins = (
+            self.origin if isinstance(self.origin, list) else [self.origin]
+        )
 
         self.app.add_middleware(
             CORSMiddleware,
@@ -50,7 +66,6 @@ class Server:
             Midlleware,
             settings=self.settings,
             cache=self.cache,
-            origin=self.origin
         )
 
         logger.success("Middleware created successfully.")

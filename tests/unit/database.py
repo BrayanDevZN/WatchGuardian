@@ -46,6 +46,7 @@ async def test_db() -> None:
         status="SUCCESS"
     )
     print(result)
+    assert result["memory_bytes"] == 1024
 
     print("\n=== SELECT LOG UPDATED ===")
     print(await control_db.logs.select(id=log_id))
@@ -57,10 +58,12 @@ async def test_db() -> None:
         task="test_task",
         status="pending",
         content="Processando tarefa de teste",
-        latency=0
+        latency=0,
+        memory_bytes=0,
     )
 
     print(observability_created)
+    assert observability_created["memory_bytes"] == 0
 
     observability_id = observability_created["id"]
     observability_public_id = observability_created["public_id"]
@@ -79,7 +82,8 @@ async def test_db() -> None:
         id=observability_id,
         group="unit_tests_updated",
         status="success",
-        content="Processamento finalizado"
+        content="Processamento finalizado",
+        memory_bytes=1024,
     )
     print(result)
 
@@ -98,7 +102,8 @@ async def test_db() -> None:
         task="reset_test",
         status="pending",
         content="Essa operação será apagada pelo reset",
-        latency=0
+        latency=0,
+        memory_bytes=0,
     )
 
     print("\nLogs antes do reset:")

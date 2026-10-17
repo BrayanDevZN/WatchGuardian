@@ -33,14 +33,16 @@ class ObsClient:
         task: str,
         status: Literal["sucess", "pending", "failure"],
         content: str,
-        latency: int
+        latency: int,
+        memory_bytes: int = 0,
     ) -> Any:
         data = {
             "group": group,
             "task": task,
             "status": status,
             "content": content,
-            "latency": latency
+            "latency": latency,
+            "memory_bytes": memory_bytes,
         }
 
         response = await asyncio.to_thread(
@@ -85,7 +87,8 @@ class ObsClient:
         task: str | None = None,
         status: Literal["sucess", "pending", "failure"] | None = None,
         content: str | None = None,
-        latency: int | None = None
+        latency: int | None = None,
+        memory_bytes: int | None = None,
     ) -> Any:
         params = {
             key: value
@@ -101,7 +104,8 @@ class ObsClient:
             "task": task,
             "status": status,
             "content": content,
-            "latency": latency
+            "latency": latency,
+            "memory_bytes": memory_bytes,
         }
 
         response = await asyncio.to_thread(

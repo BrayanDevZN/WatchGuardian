@@ -17,5 +17,6 @@ class ModelObservability(Base):
     task: Mapped[str] = mapped_column(String, nullable=False, index=True)
     content: Mapped[str] = mapped_column(String, nullable=False)
     latency: Mapped[int] = mapped_column(Integer, nullable=False)
+    memory_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     update_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

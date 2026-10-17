@@ -85,12 +85,14 @@ async def test_client() -> None:
         status="pending",
         content="functional api test",
         latency=1,
+        memory_bytes=2048,
     )
 
     assert obs_created is not None
     assert "id" in obs_created
     assert "public_id" in obs_created
     assert obs_created["group"] == "functional_tests"
+    assert obs_created["memory_bytes"] == 2048
 
     obs_id = obs_created["id"]
     obs_public_id = obs_created["public_id"]
@@ -115,9 +117,11 @@ async def test_client() -> None:
         status="sucess",
         content="functional api test finished",
         latency=2,
+        memory_bytes=4096,
     )
     assert obs_updated is not None
     assert obs_updated["group"] == "functional_tests_updated"
+    assert obs_updated["memory_bytes"] == 4096
 
     print("\n=== OBS DELETE ===")
     obs_deleted = await obs.delete_obs(id=obs_id)

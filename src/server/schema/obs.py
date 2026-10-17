@@ -11,6 +11,7 @@ class CreateObs(BaseModel):
     content: str
     latency: int
     group: str
+    memory_bytes: int = 0
 
 
 class UpdateObs(BaseModel):
@@ -20,3 +21,4 @@ class UpdateObs(BaseModel):
     content: str | None = None
     latency: int | None = None
     group: str | None = None
+    memory_bytes: int | None = None

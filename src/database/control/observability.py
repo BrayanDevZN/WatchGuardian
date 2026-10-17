@@ -29,6 +29,7 @@ class ObservabilityDb:
             "status": data.status,
             "content": data.content,
             "latency": data.latency,
+            "memory_bytes": data.memory_bytes,
             "created_at": data.created_at,
             "update_at": data.update_at,
         }
@@ -41,6 +42,7 @@ class ObservabilityDb:
         content: str,
         latency: int,
         public_id: uuid.UUID | None = None,
+        memory_bytes: int = 0,
     ) -> dict:
         try:
             async with self.session.begin() as session:
@@ -50,6 +52,7 @@ class ObservabilityDb:
                     status=status,
                     content=content,
                     latency=latency,
+                    memory_bytes=memory_bytes,
                     public_id=public_id if public_id is not None else uuid.uuid4(),
                 )
 
@@ -110,6 +113,7 @@ class ObservabilityDb:
         status: str | None = None,
         content: str | None = None,
         latency: int | None = None,
+        memory_bytes: int | None = None,
     ) -> dict | None:
         if id is None and public_id is None:
             raise ValueError("Informe id ou public_id para atualizar.")
@@ -126,9 +130,11 @@ class ObservabilityDb:
             values["content"] = content
         if latency is not None:
             values["latency"] = latency
+        if memory_bytes is not None:
+            values["memory_bytes"] = memory_bytes
 
         if not values:
-            raise ValueError("Informe group, task, status, content ou latency para atualizar.")
+            raise ValueError("Informe group, task, status, content, latency ou memory_bytes para atualizar.")
 
         try:
             async with self.session.begin() as session:

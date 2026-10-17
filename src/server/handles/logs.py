@@ -18,6 +18,7 @@ async def create_log(log: CreateLog, request: Request, user: str | None = Depend
     control_db = await WatchDb(settings=settings)
 
     log = await control_db.logs.create(log=log.log, status=log.status)
+    await request.app.state.realtime_events.publish("logs.created", log)
 
     logger.success("Log record registered successfully.")
     return JSONResponse(status_code=201, content=jsonable_encoder(log))
@@ -42,6 +43,8 @@ async def update_log(log: UpdateLog, request: Request, id: int | None = None, pu
     control_db = await WatchDb(settings=settings)
 
     result = await control_db.logs.update(public_id=public_id, id=id, log=log.log, status=log.status)
+    if result is not None:
+        await request.app.state.realtime_events.publish("logs.updated", result)
     return JSONResponse(status_code=201, content=jsonable_encoder(result))
 
 
@@ -52,5 +55,7 @@ async def delete_log(request: Request, id: int | None = None, public_id: str | N
     settings = request.app.state.settings
     control_db = await WatchDb(settings=settings)
 
-    await control_db.logs.delete(public_id=public_id, id=id)
+    result = await control_db.logs.delete(public_id=public_id, id=id)
+    if result is not None:
+        await request.app.state.realtime_events.publish("logs.deleted", result)
     return JSONResponse(status_code=201, content="sucess")

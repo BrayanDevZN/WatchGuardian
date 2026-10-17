@@ -22,8 +22,10 @@ async def create_obs(obs: CreateObs, request: Request, user: str | None = Depend
         task=obs.task,
         status=obs.status,
         content=obs.content,
-        latency=obs.latency
+        latency=obs.latency,
+        memory_bytes=obs.memory_bytes,
     )
+    await request.app.state.realtime_events.publish("observability.created", result)
 
     logger.success("Observability record registered successfully.")
     return JSONResponse(status_code=201, content=jsonable_encoder(result))
@@ -64,8 +66,11 @@ async def update_obs(obs: UpdateObs, request: Request, id: int | None = None, pu
         task=obs.task,
         status=obs.status,
         content=obs.content,
-        latency=obs.latency
+        latency=obs.latency,
+        memory_bytes=obs.memory_bytes,
     )
+    if result is not None:
+        await request.app.state.realtime_events.publish("observability.updated", result)
 
     return JSONResponse(status_code=201, content=jsonable_encoder(result))
 
@@ -77,5 +82,7 @@ async def delete_obs(request: Request, id: int | None = None, public_id: str | N
     settings = request.app.state.settings
     control_db = await WatchDb(settings=settings)
 
-    await control_db.observability.delete(public_id=public_id, id=id)
+    result = await control_db.observability.delete(public_id=public_id, id=id)
+    if result is not None:
+        await request.app.state.realtime_events.publish("observability.deleted", result)
     return JSONResponse(status_code=201, content="sucess")

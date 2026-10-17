@@ -4,6 +4,11 @@ from .auth import AuthClient, logger
 from .logs import LogsClient
 from .obs import ObsClient
 import requests
+import json
+from collections.abc import AsyncIterator
+from typing import Any
+from urllib.parse import urlsplit, urlunsplit
+from websockets.asyncio.client import connect
 
 class Client:
 
@@ -28,6 +33,31 @@ class Client:
             user_token=user_token,
             refresh_token=refresh_token
         )
+
+    async def _listen_events(self, path: str, token: str) -> AsyncIterator[dict[str, Any]]:
+        parsed_url = urlsplit(self.url)
+        scheme = {"http": "ws", "https": "wss"}.get(parsed_url.scheme, parsed_url.scheme)
+        ws_url = urlunsplit((scheme, parsed_url.netloc, path, "", ""))
+
+        async with connect(
+            ws_url,
+            additional_headers={"X-user_token": token},
+        ) as websocket:
+            async for message in websocket:
+                event = json.loads(message)
+                if not isinstance(event, dict):
+                    raise ValueError("WebSocket event must be a JSON object")
+                yield event
+
+    async def listen_logs(self, token: str) -> AsyncIterator[dict[str, Any]]:
+        """Yield log events from the authenticated `/logs/ws` WebSocket."""
+        async for event in self._listen_events("/logs/ws", token):
+            yield event
+
+    async def listen_obs(self, token: str) -> AsyncIterator[dict[str, Any]]:
+        """Yield observability events from the authenticated `/obs/ws` WebSocket."""
+        async for event in self._listen_events("/obs/ws", token):
+            yield event
 
     async def health(self) -> bool:
 

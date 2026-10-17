@@ -3,39 +3,43 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from src.core.module import Settings
 from src.service.cache import CacheManage
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 
 class Midlleware(BaseHTTPMiddleware):
 
-    def __init__(self, app, settings:Settings, cache:CacheManage, origin:str|list)-> None:
+    def __init__(self, app, settings: Settings, cache: CacheManage | None) -> None:
         super().__init__(app)
 
         self.settings = settings
         self.cache = cache
-        self.origin = origin
 
     async def dispatch(self, request:Request, call_next):
 
-        name = f"rate_limit:{str(request.client.host) + str(request.client.port)}"
+        client_host = request.client.host if request.client else "unknown"
+        name = f"rate_limit:{client_host}"
 
         rate_limit = int(self.settings.required_secrets(secret="rate_limit"))
         
-        user_limit = await self.cache.read(key=name)
-
-        origin_url = request.headers.get("origin")
-
-        
-
-        if ((isinstance(self.origin, list) and user_limit is not None and int(user_limit) > rate_limit and not origin_url in self.origin)or
-            (isinstance(self.origin, str) and user_limit is not None and int(user_limit) > rate_limit and origin_url != self.origin)
-            ):
-
-            raise HTTPException(
-                status_code=429,
-                detail="Too many requests"
+        if self.cache is None:
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Redis rate limiter is unavailable"},
             )
 
-        await self.cache.incr(key=name)
+        try:
+            user_limit = await self.cache.read(key=name)
+            if user_limit is not None and int(user_limit) >= rate_limit:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests"},
+                )
 
-        
+            await self.cache.incr(key=name)
+        except Exception:
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Redis rate limiter is unavailable"},
+            )
+
         return await call_next(request)

@@ -47,6 +47,8 @@ Para atualizar para a versão mais recente:
 pip install --upgrade watchguardian
 ```
 
+O PyPI instala a última versão publicada; alterações ainda não publicadas neste repositório só estarão disponíveis instalando o checkout local, por exemplo com `pip install -e .`.
+
 Depois da instalação, os imports públicos são:
 
 ```python
@@ -80,7 +82,9 @@ O framework pode ser usado de duas formas:
 - logging com `DEBUG`, `INFO`, `SUCCESS`, `WARNING`, `ERROR` e `CRITICAL`;
 - persistência opcional de logs em background;
 - observabilidade assíncrona de tarefas, latência, status e erros;
+- estimativa do aumento de memória residente (RSS), em bytes, observado durante cada tarefa;
 - servidor próprio de observabilidade baseado em FastAPI;
+- WebSockets separados para eventos de logs e observabilidade em tempo real;
 - PostgreSQL assíncrono e SQLite como fallback;
 - Redis para cache, TTL, contadores, hashes e Pub/Sub;
 - JWT com `user_token` e `refresh_token`;
@@ -113,6 +117,8 @@ Essa instância centraliza:
 - persistência de dados;
 - consultas remotas via `ClientHttp`;
 - rate limit e cache com Redis.
+
+O servidor também publica eventos nos canais `/logs/ws` e `/obs/ws`. Veja [a documentação de realtime](docs/realtime.md) para autenticação, formato das mensagens e exemplos.
 
 Assim, o WatchGuardian pode funcionar tanto como framework dentro de um projeto quanto como um serviço separado de observabilidade para vários sistemas.
 
@@ -310,6 +316,7 @@ await watch_db.observability.create(
     status="pending",
     content="starting",
     latency=0,
+    memory_bytes=0,
 )
 ```
 
@@ -387,6 +394,7 @@ uvicorn main:app --reload
 ```
 
 O servidor inclui rotas internas de logs, observabilidade e autenticação, além de CORS, rate limit e integração com Redis.
+O rate limit Redis vale para requisições HTTP; as conexões WebSocket ficam fora desse middleware.
 
 ---
 
@@ -412,7 +420,29 @@ result = await client.auth(
     user_token=user_token,
     refresh_token=refresh_token,
 ).refresh()
+
+# Cada método mantém sua própria conexão e recebe só aquele tipo de evento.
+import asyncio
+
+async def main():
+    async def receive_logs():
+        async for event in client.listen_logs(token=user_token):
+            print(event["type"], event["data"])
+
+    async def receive_obs():
+        async for event in client.listen_obs(token=user_token):
+            print(event["type"], event["data"])
+
+    await asyncio.gather(receive_logs(), receive_obs())
+
+asyncio.run(main())
 ```
+
+---
+
+### Eventos em tempo real
+
+O servidor fornece `/logs/ws` e `/obs/ws`; o `ClientHttp` tem `listen_logs(token)` e `listen_obs(token)`. Os iteradores recebem envelopes JSON de eventos futuros, sem histórico ou replay. Para detalhes sobre Redis Pub/Sub, autenticação, limites de fila e reconexão, consulte [docs/realtime.md](docs/realtime.md).
 
 ---
 
@@ -618,7 +648,13 @@ Sem `--project`, `balance create` recebe um objeto importável no formato `modul
 ```bash
 watchguardian server logs --token SEU_TOKEN
 watchguardian server obs --token SEU_TOKEN
+
+# Acompanha novos eventos em tempo real pelo WebSocket
+watchguardian server logs --token SEU_TOKEN --realtime
+watchguardian server obs --token SEU_TOKEN --realtime
 ```
+
+Sem `--realtime`, os comandos fazem a consulta HTTP normal. Com a flag, ficam escutando o WebSocket até a conexão ser encerrada (por exemplo, com Ctrl+C).
 
 Com projeto:
 
@@ -717,9 +753,9 @@ Os métodos são assíncronos:
 
 Os métodos são assíncronos:
 
-- `create(group, task, status, content, latency, public_id=None) -> dict`: cria um registro; gera um identificador público se não receber um.
+- `create(group, task, status, content, latency, public_id=None, memory_bytes=0) -> dict`: cria um registro; `memory_bytes` guarda o aumento estimado de RSS em bytes; gera um identificador público se não receber um.
 - `select(id=None, public_id=None, group=None) -> dict | list[dict] | None`: lista registros ou filtra por identificador e/ou grupo.
-- `update(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None) -> dict | None`: atualiza os campos fornecidos; exige um identificador e pelo menos um campo para alterar.
+- `update(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None, memory_bytes=None) -> dict | None`: atualiza os campos fornecidos; exige um identificador e pelo menos um campo para alterar.
 - `delete(id=None, public_id=None) -> dict | None`: remove pelo ID numérico ou público.
 
 Os dois serviços usam cache Redis quando `watch_db.cache` está disponível. Se não houver cache configurado, operam diretamente no banco ou no servidor HTTP.
@@ -754,12 +790,17 @@ Importação: `from WatchGuardian.server import ClientHttp`
 - `obs(token) -> ObsClient`: cria um cliente de operações de observabilidade autenticado pelo token.
 - `auth(user_token, refresh_token) -> AuthClient`: cria um cliente de autenticação com os dois tokens.
 - `health() -> bool`: consulta `/health` e retorna se o servidor está acessível.
+- `listen_logs(token)`: conecta ao WebSocket autenticado `/logs/ws` e retorna um iterador assíncrono somente de eventos de logs.
+- `listen_obs(token)`: conecta ao WebSocket autenticado `/obs/ws` e retorna um iterador assíncrono somente de eventos de observabilidade.
 
 Os métodos de operação HTTP são assíncronos:
 
 - Em `client.logs(token)`: `create_log(status, log)`, `get_log(id=None, public_id=None)`, `update_log(id=None, public_id=None, log=None, status=None)` e `delete_log(id=None, public_id=None)`.
-- Em `client.obs(token)`: `create_obs(group, task, status, content, latency)`, `get_obs(id=None, public_id=None, group=None)`, `update_obs(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None)` e `delete_obs(id=None, public_id=None)`.
+- Em `client.obs(token)`: `create_obs(group, task, status, content, latency, memory_bytes=0)`, `get_obs(id=None, public_id=None, group=None)`, `update_obs(id=None, public_id=None, group=None, task=None, status=None, content=None, latency=None, memory_bytes=None)` e `delete_obs(id=None, public_id=None)`.
+
 - Em `client.auth(user_token, refresh_token)`: `refresh()` envia os tokens para a rota de renovação.
+
+`WatchObs.begin()` grava o RSS inicial em `memory_bytes` quando cria o registro pendente. Ao sair do contexto, atualiza o campo com o aumento estimado do pico de RSS observado durante a task. A amostragem ocorre a cada 50 ms, então picos mais curtos podem passar despercebidos. Em tarefas assíncronas concorrentes, o RSS é compartilhado pelo processo; o valor final é uma estimativa e não uma atribuição isolada de memória para cada coroutine. `memory_bytes` também pode ser enviado pelo cliente HTTP; no banco, registros antigos recebem `0` quando a coluna é adicionada.
 
 Os clientes retornam o JSON da resposta. Quando a resposta HTTP tem status 400 ou superior, registram o erro e retornam `None`.
 
@@ -879,7 +920,7 @@ python main.py
 # JWT
 secret=your-secret
 
-# Redis
+# Redis (rate limit HTTP e eventos entre instâncias)
 host=localhost
 port=6379
 password=
@@ -905,7 +946,7 @@ O projeto possui três níveis de testes:
 
 ### Unitários
 
-Validam componentes isolados como banco, logs, cache, token e comandos internos.
+Validam componentes isolados como banco, logs, cache, token, comandos internos, flag `--realtime` do CLI, os canais WebSocket e o rate limit Redis HTTP.
 
 ### Integração
 
@@ -915,7 +956,7 @@ Validam a comunicação entre módulos, incluindo integração entre banco, logg
 
 Sobem o servidor WatchGuardian e exercitam o fluxo completo via cliente HTTP e CLI.
 
-Os testes são executados no GitHub Actions. O workflow `build.yaml` executa testes unitários e de integração com Redis como serviço, enquanto `server.yaml` executa os testes funcionais do servidor.
+Os testes são executados no GitHub Actions. O workflow `build.yaml` executa testes unitários e de integração; nele, Redis é iniciado como serviço. Os testes de WebSocket verificam autenticação, serialização de datas e isolamento dos canais. O workflow `server.yaml` executa os testes funcionais do servidor.
 
 O projeto também está preparado para fluxo de CI/CD com GitHub Actions e publicação de releases no PyPI. Atualmente a validação contínua é automatizada e a distribuição pública é feita pelo pacote `watchguardian`.
 

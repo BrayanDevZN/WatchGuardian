@@ -86,6 +86,7 @@ class ObsService:
         content: str,
         latency: int | float,
         public_id: uuid.UUID | None = None,
+        memory_bytes: int = 0,
     ) -> dict:
         if self.http:
             data = await self.db.create_obs(
@@ -94,6 +95,7 @@ class ObsService:
                 status=status,
                 content=content,
                 latency=latency,
+                memory_bytes=memory_bytes,
             )
         else:
             data = await self.db.create(
@@ -102,6 +104,7 @@ class ObsService:
                 status=status,
                 content=content,
                 latency=latency,
+                memory_bytes=memory_bytes,
                 public_id=public_id,
             )
 
@@ -147,6 +150,7 @@ class ObsService:
         status: str | None = None,
         content: str | None = None,
         latency: int | float | None = None,
+        memory_bytes: int | None = None,
     ) -> dict | None:
         old_data = await self.select(id=id, public_id=public_id) if self.cache is not None else None
 
@@ -159,6 +163,7 @@ class ObsService:
                 status=status,
                 content=content,
                 latency=latency,
+                memory_bytes=memory_bytes,
             )
         else:
             data = await self.db.update(
@@ -169,6 +174,7 @@ class ObsService:
                 status=status,
                 content=content,
                 latency=latency,
+                memory_bytes=memory_bytes,
             )
 
         if data is not None:

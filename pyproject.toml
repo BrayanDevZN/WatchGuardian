@@ -22,8 +22,9 @@ dependencies = [
     "python-dotenv==1.2.4",
     "redis==8.1.0",
     "requests==2.34.2",
-    "SQLAlchemy==2.1.4",
+    "SQLAlchemy[asyncio]==2.1.4",
     "uvicorn==0.54.0",
+    "websockets==16.0",
 ]
 
 [project.urls]

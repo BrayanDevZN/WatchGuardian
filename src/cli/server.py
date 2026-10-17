@@ -35,10 +35,22 @@ def server(subparser) -> None:
     logs_parser = server_cmd.add_parser("logs")
     add_project_argument(logs_parser)
     logs_parser.add_argument("--token", default=None)
+    logs_parser.add_argument(
+        "--realtime",
+        action="store_true",
+        default=False,
+        help="Stream new logs through the WebSocket instead of fetching over HTTP",
+    )
 
     obs_parser = server_cmd.add_parser("obs")
     add_project_argument(obs_parser)
     obs_parser.add_argument("--token", default=None)
+    obs_parser.add_argument(
+        "--realtime",
+        action="store_true",
+        default=False,
+        help="Stream new observability events through the WebSocket instead of fetching over HTTP",
+    )
 
 
 def _settings(env_file: str | None) -> Settings:
@@ -82,6 +94,7 @@ def _print_obs(item: dict) -> None:
         f"public_id={item.get('public_id')} | "
         f"task={item.get('task')} | "
         f"latency={item.get('latency')} | "
+        f"memory_bytes={item.get('memory_bytes')} | "
         f"content={item.get('content')} | "
         f"created_at={item.get('created_at')}"
     )
@@ -177,6 +190,11 @@ async def run_server(args) -> None:
         client = ClientHttp(settings=settings)
 
     if args.command == "logs":
+        if args.realtime:
+            async for event in client.listen_logs(token=token):
+                _print_log(event["data"])
+            return
+
         data = await client.logs(token=token).get_log()
 
         if data is None:
@@ -186,6 +204,11 @@ async def run_server(args) -> None:
             _print_log(item)
 
     elif args.command == "obs":
+        if args.realtime:
+            async for event in client.listen_obs(token=token):
+                _print_obs(event["data"])
+            return
+
         data = await client.obs(token=token).get_obs()
 
         if data is None:

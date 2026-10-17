@@ -43,6 +43,10 @@ jobs:
                 python -m tests.unit.cache
                 python -m tests.unit.token
                 python -m tests.unit.cmd
+                python -m tests.unit.realtime_client
+                python -m tests.unit.cli_server
+                python -m tests.unit.realtime_ws
+                python -m tests.unit.server_middleware
 
             - name: integration
               run:

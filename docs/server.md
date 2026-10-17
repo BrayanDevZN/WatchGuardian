@@ -1,8 +1,8 @@
 # WatchGuardian Server
 
-Este documento explica como configurar, iniciar e consumir o servidor HTTP do WatchGuardian.
+Este documento explica como configurar, iniciar e consumir a API HTTP e os WebSockets do servidor WatchGuardian.
 
-O servidor é construído sobre FastAPI e reúne as rotas de logs, observabilidade e autenticação/refresh de token.
+O servidor é construído sobre FastAPI e oferece rotas HTTP para logs e observabilidade, autenticação/refresh de token e canais WebSocket em tempo real.
 
 ---
 
@@ -11,8 +11,11 @@ O servidor é construído sobre FastAPI e reúne as rotas de logs, observabilida
 ```text
 src/server/
 ├── depends.py
+├── events.py
 ├── manage.py
 ├── midlleware.py
+├── routes/
+│   └── ws.py
 ├── handles/
 │   ├── auth.py
 │   ├── logs.py
@@ -25,7 +28,9 @@ src/server/
 Responsabilidades principais:
 
 - `manage.py`: cria o FastAPI, registra CORS, routers e middleware.
-- `midlleware.py`: aplica rate limit usando Redis.
+- `midlleware.py`: aplica o rate limit HTTP usando Redis; o middleware não processa conexões WebSocket.
+- `events.py`: publica eventos localmente e, quando Redis está configurado, distribui-os por Redis Pub/Sub.
+- `routes/ws.py`: registra os WebSockets separados de logs e observabilidade.
 - `depends.py`: valida o `user_token` nas rotas protegidas.
 - `handles/logs.py`: CRUD HTTP de logs.
 - `handles/obs.py`: CRUD HTTP de observabilidade.
@@ -54,17 +59,17 @@ settings = Settings()
 
 Carregar o `.env` não adiciona automaticamente as variáveis ao dicionário interno de `Settings`. As variáveis precisam ser registradas com `add_secret()` antes de serem usadas por `required_secrets()` ou `get_secret()`.
 
-### Variáveis obrigatórias para o servidor
+### Variáveis necessárias para o servidor
 
 ```python
 settings.add_secret([
-    "host",
-    "port",
     "origin",
     "rate_limit",
     "secret",
 ])
 ```
+
+Para usar o rate limit HTTP e distribuir eventos entre processos, configure também `host` e `port` do Redis. Sem Redis, o servidor ainda pode iniciar e entregar eventos locais pelo WebSocket, mas as rotas HTTP retornam `503` porque o rate limiter Redis não está disponível. A entrega local não alcança outras instâncias do servidor.
 
 ### Variáveis opcionais
 
@@ -96,7 +101,7 @@ O `path` é opcional e só participa da configuração do banco quando `url_db` 
 
 ### 3.1 `host`
 
-**Obrigatória:** sim.
+**Obrigatória:** não para iniciar; necessária para conectar ao Redis.
 
 Usada pelo `CacheManage` para criar a conexão Redis.
 
@@ -104,13 +109,13 @@ Usada pelo `CacheManage` para criar a conexão Redis.
 host=localhost
 ```
 
-Sem `host`, o `Server` não consegue criar o cache porque `CacheManage` usa `required_secrets("host")`.
+Sem `host` ou `port`, o `Server` não cria `CacheManage`. O rate limit HTTP fica indisponível e as requisições HTTP respondem `503`; a entrega local de eventos WebSocket ainda funciona dentro do processo.
 
 ---
 
 ### 3.2 `port`
 
-**Obrigatória:** sim.
+**Obrigatória:** não para iniciar; necessária para conectar ao Redis.
 
 Porta do Redis.
 
@@ -118,7 +123,7 @@ Porta do Redis.
 port=6379
 ```
 
-Assim como `host`, é lida com `required_secrets()`.
+É lida por `CacheManage` quando Redis está configurado.
 
 ---
 
@@ -309,11 +314,11 @@ sqlite+aiosqlite:///watch.db
 
 | Nome | Tipo | Obrigatória? | Usada por | Comportamento se ausente |
 | --- | --- | --- | --- | --- |
-| `host` | env/secret | Sim | Redis / `CacheManage` | erro em `required_secrets()` |
-| `port` | env/secret | Sim | Redis / `CacheManage` | erro em `required_secrets()` |
+| `host` | env/secret | Não para iniciar; necessária para Redis | Redis / `CacheManage` | cache não é criado; HTTP retorna `503` pelo middleware |
+| `port` | env/secret | Não para iniciar; necessária para Redis | Redis / `CacheManage` | cache não é criado; HTTP retorna `503` pelo middleware |
 | `password` | env/secret | Não | Redis | fica `None` |
 | `origin` | env/secret | Sim | CORS | erro em `required_secrets()` |
-| `rate_limit` | env/secret | Sim para rate limit | middleware | erro quando o middleware tenta ler o limite |
+| `rate_limit` | env/secret | Sim | middleware HTTP | erro quando o middleware tenta ler o limite |
 | `secret` | env/secret | Sim para auth | JWT / rotas protegidas / refresh | autenticação não consegue funcionar corretamente |
 | `url_db` | env/secret | Não | banco | usa fallback SQLite |
 | `path` | config | Não | fallback SQLite | usa `sqlite+aiosqlite:///watch.db` |
@@ -478,18 +483,20 @@ Documentação automática do FastAPI:
 
 ## 9. Autenticação das rotas
 
-As rotas de logs e observabilidade usam `depends_user`.
+As rotas HTTP de logs e observabilidade usam `depends_user`.
 
-O token normal é um JWT com:
+Os WebSockets `/logs/ws` e `/obs/ws` também exigem um `user_token` válido. O token pode ser enviado em `X-user_token`, em `Authorization: Bearer <token>` ou na query `?token=<token>`. Para clientes Python, use o header; query token existe para clientes de navegador que não permitem configurar headers arbitrários.
+
+O token normal é um JWT com `exp` em NumericDate (segundos desde Unix epoch):
 
 ```json
 {
-  "exp": "2026-10-10T18:30:00+00:00",
+  "exp": 1791657000,
   "type": "user_token"
 }
 ```
 
-O `exp` é salvo como string ISO UTC.
+`user_token()` define uma expiração de uma hora. O token precisa conter `type: "user_token"`.
 
 O `refresh_token` possui:
 
@@ -659,7 +666,8 @@ POST /obs/
   "task": "process_data",
   "status": "pending",
   "content": "Task iniciada",
-  "latency": 0
+  "latency": 0,
+  "memory_bytes": 0
 }
 ```
 
@@ -672,6 +680,8 @@ failure
 ```
 
 `sucess` está escrito dessa forma no contrato atual do projeto.
+
+`memory_bytes` é uma estimativa do aumento do RSS do processo durante a tarefa, em bytes. `WatchObs` registra o baseline ao iniciar e atualiza o campo ao finalizar o contexto; a API também permite enviar ou alterar o valor manualmente. Como o RSS pertence ao processo inteiro, tarefas concorrentes podem afetar essa estimativa.
 
 ### Buscar
 
@@ -714,6 +724,7 @@ task
 status
 content
 latency
+memory_bytes
 ```
 
 ### Deletar
@@ -724,9 +735,11 @@ DELETE /obs/?id=1
 
 ---
 
-## 14. Redis e rate limit
+## 14. Redis e rate limit HTTP
 
-O `CacheManage` é criado no `Server` e usa Redis para o rate limit.
+Quando `host` e `port` estão definidos, o `Server` cria `CacheManage`. O middleware HTTP usa um contador Redis por IP de origem e o limite configurado em `rate_limit`. O contador tem TTL de 60 segundos, renovado a cada requisição aceita; depois que o limite é alcançado, ele expira 60 segundos após a última requisição aceita. Requisições HTTP bloqueadas recebem `429 Too Many Requests`.
+
+O rate limit não é aplicado às conexões WebSocket. Se Redis não estiver configurado ou estiver indisponível, as rotas HTTP retornam `503 Service Unavailable`, e o WebSocket ainda funciona com eventos locais dentro do processo atual. Sem Redis disponível, não há distribuição de eventos entre instâncias.
 
 Exemplo local:
 
@@ -734,7 +747,7 @@ Exemplo local:
 docker run --name watchguardian-redis -p 6379:6379 redis:latest
 ```
 
-Configuração mínima:
+Configuração para habilitar o rate limit HTTP:
 
 ```env
 host=localhost
@@ -744,9 +757,19 @@ rate_limit=100
 
 `password` só é necessária quando o Redis exigir senha.
 
+`rate_limit` deve ser um inteiro positivo. O contador é separado por IP de origem, não por token.
+
 ---
 
-## 15. Banco e tabelas
+## 15. WebSockets e eventos em tempo real
+
+O servidor expõe `/logs/ws` e `/obs/ws`, cada um com autenticação `user_token` e eventos próprios. O rate limit Redis vale para HTTP; as conexões WebSocket não passam pelo middleware HTTP.
+
+Veja a referência completa em [Realtime: eventos e WebSockets](realtime.md), com formatos de mensagem, autenticação, uso do cliente/CLI e comportamento com ou sem Redis.
+
+---
+
+## 16. Banco e tabelas
 
 Os handlers criam o banco com o mesmo `Settings` salvo no `app.state`:
 
