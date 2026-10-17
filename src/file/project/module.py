@@ -1,14 +1,142 @@
-"Junta varios modulos com settings"
+"""Inicializa os módulos públicos do WatchGuardian com as mesmas Settings."""
+
 from WatchGuardian import Settings, WatchLogs, WatchAuth, WatchObs
 from WatchGuardian.database import WatchDb, CacheManage
 from WatchGuardian.server import WatchServer, ClientHttp
-from WatchGuardian.balance import WatchBalance, Replicator, Replicators
+from WatchGuardian.balance import WatchBalance, Replicators
+
 
 class WatchModule:
+    """Monta os módulos do framework respeitando suas dependências."""
 
-    def __init__(self, settings:Settings)-> None:
-
+    def __init__(
+        self,
+        settings: Settings,
+        http: bool = False,
+        loglevel: str = "INFO",
+    ) -> None:
         self.settings = settings
+        self.http = http
+        self.loglevel = loglevel
+        self.logger = WatchLogs(loglevel=loglevel)
 
-    
-        
+        self.watch_db: WatchDb | None = None
+        self.watch_logs: WatchLogs | None = None
+        self.watch_obs: WatchObs | None = None
+        self.watch_auth: WatchAuth | None = None
+        self.cache: CacheManage | None = None
+        self.client_http: ClientHttp | None = None
+        self.watch_server: WatchServer | None = None
+        self.replicators: Replicators | None = None
+        self.watch_balance: WatchBalance | None = None
+
+        self.logger.info(
+            f"WatchModule inicializado (http={self.http}, loglevel={self.loglevel})."
+        )
+
+    async def database(self) -> WatchDb:
+        """Inicializa WatchDb com o modo HTTP opcional."""
+        if self.watch_db is None:
+            self.logger.info(f"Inicializando WatchDb (http={self.http}).")
+            self.watch_db = await WatchDb(settings=self.settings, http=self.http)
+            self.cache = self.watch_db.cache
+            self.logger = WatchLogs(
+                loglevel=self.loglevel,
+                watch_db=self.watch_db,
+            )
+            self.logger.success("WatchDb inicializado.")
+
+        return self.watch_db
+
+    async def logs(self) -> WatchLogs:
+        """Cria WatchLogs ligado ao WatchDb."""
+        if self.watch_logs is None:
+            watch_db = await self.database()
+            self.logger.info("Inicializando WatchLogs.")
+            self.watch_logs = WatchLogs(
+                loglevel=self.loglevel,
+                watch_db=watch_db,
+            )
+            self.logger.success("WatchLogs inicializado.")
+
+        return self.watch_logs
+
+    async def observability(self) -> WatchObs:
+        """Cria WatchObs com as instâncias compartilhadas de logs e banco."""
+        if self.watch_obs is None:
+            watch_db = await self.database()
+            watch_logs = await self.logs()
+            self.logger.info("Inicializando WatchObs.")
+            self.watch_obs = WatchObs(
+                logs=watch_logs,
+                watch_db=watch_db,
+            )
+            self.logger.success("WatchObs inicializado.")
+
+        return self.watch_obs
+
+    def auth(self) -> WatchAuth:
+        """Cria WatchAuth usando as Settings fornecidas."""
+        if self.watch_auth is None:
+            self.logger.info("Inicializando WatchAuth.")
+            self.watch_auth = WatchAuth(settings=self.settings)
+            self.logger.success("WatchAuth inicializado.")
+
+        return self.watch_auth
+
+    async def cache_module(self) -> CacheManage | None:
+        """Expõe o cache que WatchDb já inicializou, quando disponível."""
+        if self.cache is None and self.watch_db is None:
+            await self.database()
+
+        self.logger.info(
+            "Cache disponível." if self.cache is not None else "Cache não configurado."
+        )
+        return self.cache
+
+    def client(self) -> ClientHttp:
+        """Cria ClientHttp usando as Settings compartilhadas."""
+        if self.client_http is None:
+            self.logger.info("Inicializando ClientHttp.")
+            self.client_http = ClientHttp(settings=self.settings)
+            self.logger.success("ClientHttp inicializado.")
+
+        return self.client_http
+
+    def server(self) -> WatchServer:
+        """Cria WatchServer usando as Settings compartilhadas."""
+        if self.watch_server is None:
+            self.logger.info("Inicializando WatchServer.")
+            self.watch_server = WatchServer(settings=self.settings)
+            self.logger.success("WatchServer inicializado.")
+
+        return self.watch_server
+
+    def balance(self) -> WatchBalance:
+        """Cria Replicators e os conecta ao WatchBalance."""
+        if self.watch_balance is None:
+            self.logger.info("Inicializando Replicators.")
+            self.replicators = Replicators(settings=self.settings)
+            self.logger.success("Replicators inicializados.")
+
+            self.logger.info("Inicializando WatchBalance.")
+            self.watch_balance = WatchBalance(replicas=self.replicators)
+            self.logger.success("WatchBalance inicializado.")
+
+        return self.watch_balance
+
+    async def load_modules(self) -> "WatchModule":
+        """Inicializa os módulos públicos e retorna este agregador."""
+        self.logger.info("Iniciando carregamento dos módulos WatchGuardian.")
+
+        await self.database()
+        await self.logs()
+        await self.observability()
+        self.auth()
+        await self.cache_module()
+        self.client()
+        self.server()
+        self.balance()
+
+        self.logger.success("Todos os módulos WatchGuardian foram carregados.")
+        return self
