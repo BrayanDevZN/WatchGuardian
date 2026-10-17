@@ -7,10 +7,10 @@ import sys
 import uvicorn
 
 from src.logs.module import Logs
-from src.service.module import ClientHttp, Cmd, Settings
+from src.service.module import ClientHttp, Cmd, Settings, WatchDb
 
 from .migrate import run_migrate
-from .project import add_project_argument, load_project
+from .project import add_project_argument, load_project_modules
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -125,12 +125,17 @@ async def run_server(args) -> None:
         )
         return
 
-    project = await load_project(args.project)
+    requested_modules = ("server",) if args.command == "run" else ("client",)
+    project = await load_project_modules(args.project, requested_modules)
 
     if args.command == "run":
         if project is not None:
             if not args.detached and not project.http:
-                await project.watch_db.create_tables()
+                database = await WatchDb(
+                    settings=project.settings,
+                    http=project.http,
+                )
+                await database.create_tables()
 
             app = project.server_app
             url = f"http://{args.host}:{args.port}"
@@ -153,6 +158,7 @@ async def run_server(args) -> None:
             env_file=args.env_file,
             project=None,
             command="make_tables",
+            path=None,
         )
         await run_migrate(migrate_args)
 
