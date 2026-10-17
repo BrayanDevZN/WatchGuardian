@@ -105,7 +105,11 @@ async def run_server(args) -> None:
             str(args.port),
         ]
         process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
-        logger.success(f"Project server started in detached mode. PID: {process.pid}")
+        url = f"http://{args.host}:{args.port}"
+        logger.success(
+            f"Project server started at {logger.highlighted_white(url)} "
+            f"(detached, PID: {process.pid})"
+        )
         return
 
     project = await load_project(args.project)
@@ -116,7 +120,16 @@ async def run_server(args) -> None:
                 await project.watch_db.create_tables()
 
             app = project.server_app
-            config = uvicorn.Config(app, host=args.host, port=args.port)
+            url = f"http://{args.host}:{args.port}"
+            logger.success(f"Server started at {logger.highlighted_white(url)}")
+            config = uvicorn.Config(
+                app,
+                host=args.host,
+                port=args.port,
+                log_config=None,
+                log_level="critical",
+                access_log=False,
+            )
             await uvicorn.Server(config).serve()
             return
 
@@ -133,16 +146,21 @@ async def run_server(args) -> None:
         command = (
             f"uvicorn {args.app} "
             f"--host {args.host} "
-            f"--port {args.port}"
+            f"--port {args.port} "
+            "--log-level critical "
+            "--no-access-log"
         )
+        url = f"http://{args.host}:{args.port}"
 
         if args.detached:
             process = Cmd.detached(command)
             logger.success(
-                f"Server started in detached mode. PID: {process.pid}"
+                f"Server started at {logger.highlighted_white(url)} "
+                f"(detached, PID: {process.pid})"
             )
             return
 
+        logger.success(f"Server started at {logger.highlighted_white(url)}")
         Cmd.run(command)
         return
 
