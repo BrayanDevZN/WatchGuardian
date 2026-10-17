@@ -14,7 +14,7 @@ class WatchModule:
     def __init__(
         self,
         settings: Settings,
-        http: bool = False,
+        http: bool | None = None,
         loglevel: str = "INFO",
     ) -> None:
         self.settings = settings
