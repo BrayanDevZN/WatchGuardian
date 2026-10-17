@@ -841,8 +841,8 @@ Esses módulos pertencem ao template de projeto em `src/project/watchguardian/`;
 
 - `ProjectSettings(env_file=None, local=False)`: prepara um `Settings` para o projeto.
 - `local_secret() -> None`: registra os secrets consumidos pelos módulos e preenche defaults locais ausentes.
-- `local_config() -> None`: registra as configurações padrão de banco e réplicas, sem substituir valores já definidos.
-- `get() -> Settings`: retorna as configurações; quando `local=True`, primeiro executa `local_secret` e `local_config`.
+- `local_config() -> None`: registra as configurações de banco e réplicas, lendo primeiro os valores do ambiente e usando defaults quando faltarem.
+- `get() -> Settings`: retorna as configurações e preenche secrets e configs ausentes com defaults locais, também quando um `env_file` foi informado.
 
 ### `WatchModule`
 
@@ -866,9 +866,9 @@ Os métodos de inicialização são idempotentes para as instâncias armazenadas
 - `ProjectApp()`: lê o `settings.json` ao lado de `main.py`.
 - `load_module() -> WatchModule`: resolve o `env_file` relativo à pasta do projeto, aplica configurações do JSON, carrega todos os módulos e retorna o agregador em `app.module`.
 - Após `await app.load_module()`, os módulos ficam disponíveis em `app.watch_db`, `app.watch_logs`, `app.watch_obs`, `app.watch_auth`, `app.cache`, `app.client_http`, `app.watch_server`, `app.server_app`, `app.replicators`, `app.watch_balance` e `app.balance_app`. Esses atributos são encaminhados ao `WatchModule`; também é possível acessar o agregador por `app.module`.
-- `copy_watchguardian(path=None, name=None, env_file=None) -> Path`: copia o template para `path/name`, gera o `settings.json` no destino e retorna o caminho criado. `path=None` usa o diretório atual; `name=None` usa `WatchGuardian`; o arquivo `file.py` não é copiado junto com o template.
+- `copy_watchguardian(path=None, name=None, env_file=None) -> Path`: copia o template para `path/name`, gera o `settings.json` no destino e retorna o caminho criado. `path=None` usa o diretório atual; `name=None` usa `watchguardian`; o arquivo `file.py` não é copiado junto com o template.
 
-A CLI `project start` chama essa função. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
+A CLI `project start` chama essa função. Use `project reset` para restaurar os defaults locais e `project delete` para remover o projeto. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
 
 
 ## Exemplo rápido da versão pública
