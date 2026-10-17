@@ -6,14 +6,15 @@ from src.file.project.settings import ProjectSettings
 
 async def watch_manage(
     env_file: str | None = None,
-    local: bool = True,
-    http: bool = False,
     loglevel: str = "INFO",
 ) -> WatchModule:
-    """Cria Settings, carrega todos os módulos e retorna WatchModule."""
+    """Usa defaults locais sem env_file; com arquivo, conecta ao WatchGuardian HTTP."""
+    use_local_settings = env_file is None
+    http = None if use_local_settings else True
+
     project_settings = ProjectSettings(
         env_file=env_file,
-        local=local,
+        local=use_local_settings,
     )
     settings = project_settings.get()
 
