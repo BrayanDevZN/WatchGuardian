@@ -19,6 +19,16 @@ class ProjectSettings:
     #adiciona as variaveis locais
     def local(self) -> None:
 
-        self.logs.
+        self.logs.info("Add locale environment")
+
+        "Configuração de CacheManage"
+        os.environ["host"] = "localhost"
+        os.environ["port"] = "6379"
+
+        "configuração de jwt"
+        
+
+
+
 
         
