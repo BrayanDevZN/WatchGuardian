@@ -12,7 +12,7 @@ from .merge import MergeDb
 
 class WatchDb(MergeDb):
 
-    def __init__(self, settings: Settings, http: bool = False) -> None:
+    def __init__(self, settings: Settings, http: bool | None = False) -> None:
         self.settings = settings
         self.http = http
         self.control: ControlDb | ClientHttp
