@@ -480,19 +480,19 @@ Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de
 
 ## Projeto gerado: `ProjectApp` e `WatchModule`
 
-O comando `watchguardian startproject` copia a pasta-template `src/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`; ele é convertido para minúsculas. Sem `--name`, a pasta se chama `watchguardian`. Esse nome padrão é aplicado automaticamente; para `--name`, escolha outro nome. O template contém:
+O comando `watchguardian project start` copia a pasta-template `src/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`; ele é convertido para minúsculas. Sem `--name`, a pasta se chama `watchguardian`. Esse nome padrão é aplicado automaticamente; para `--name`, escolha outro nome. O template contém:
 
 - `main.py`, que cria e exporta `app`;
 - `manage.py`, `module.py` e `settings.py`, que inicializam e conectam os módulos.
 
 O pacote público `WatchGuardian` é instalado como dependência do framework; ele não é duplicado dentro do template. A pasta-base `src/project/watchguardian/` também não contém `settings.json`.
 
-O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.json` dentro da pasta gerada. Esse JSON recebe o nome, caminho, arquivo de ambiente, modo local/HTTP, nível de log e as configurações padrão. Assim, o arquivo só passa a existir no projeto do usuário depois de executar `startproject`.
+O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.json` dentro da pasta gerada. Esse JSON recebe o nome, caminho, arquivo de ambiente, modo local/HTTP, nível de log e as configurações padrão. Assim, o arquivo só passa a existir no projeto do usuário depois de executar `project start`.
 
 Exemplo:
 
 ```bash
-watchguardian startproject --path ./apps --name myapp
+watchguardian project start --path ./apps --name myapp
 cd apps/watchguardian
 ```
 
@@ -501,7 +501,7 @@ A classe `ProjectApp` lê o JSON. Quando chamada, ela prepara `ProjectSettings`,
 O campo `env_file` controla o modo:
 
 - `null`: modo local; aplica os secrets e configs padrão de `ProjectSettings` e usa `http = null`;
-- caminho para um arquivo: resolve o caminho relativo à pasta do projeto, não aplica os defaults locais e usa o modo HTTP (`http = true`).
+- caminho para um arquivo: lê as variáveis do arquivo e usa o modo HTTP (`http = true`); variáveis ausentes recebem os defaults locais.
 
 As configurações personalizadas vão no objeto `configs` do `settings.json`. Elas são adicionadas ao `Settings` compartilhado antes dos módulos serem construídos. Assim, por exemplo, as URLs de réplica do balanceador podem ser alteradas sem editar o código gerado.
 
@@ -561,31 +561,39 @@ watchguardian --help
 
 ### Criar um projeto
 
-O comando `startproject` cria a estrutura descrita na seção [Projeto gerado](#projeto-gerado-projectapp-e-watchmodule). Sem `--env-file`, usa os defaults locais; quando você informa o arquivo, o projeto entra no modo HTTP. Os valores de configuração, incluindo os do balanceador, são ajustáveis em `settings.json`.
+O comando `project start` cria a estrutura descrita na seção [Projeto gerado](#projeto-gerado-projectapp-e-watchmodule). Por padrão, cria a pasta `./watchguardian` com configurações locais. Use `--with_env` para gerar um `.env` com as variáveis locais; também é possível informar um arquivo com `--env-file`. Valores presentes no arquivo são lidos e os ausentes recebem os defaults locais.
 
 ```bash
-watchguardian startproject
-watchguardian startproject --path ./apps --name myapp
-watchguardian startproject --path ./apps --name myapp --env-file .env
+watchguardian project start
+watchguardian project start --path ./apps --name myapp
+watchguardian project start --with_env
+watchguardian project start --env-file ./config/.env
+watchguardian project start --with_env --env-file ./config/.env
 ```
 
-O `--path` escolhe a pasta de destino e `--name` define o nome da pasta criada.
+`--path` escolhe a pasta de destino e `--name` define o nome da pasta criada. O comando `project reset` redefine o projeto para as configurações locais e recria seu `.env`; `project delete` remove o projeto. Ambos usam `./watchguardian` quando `--project` não é informado.
+
+```bash
+watchguardian project reset
+watchguardian project reset --project ./apps/myapp
+watchguardian project delete --project ./apps/myapp
+```
 
 ### Usar a configuração do projeto no CLI
 
-Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project` com o caminho da pasta criada por `startproject`. O CLI lê as configurações do `app` em `main.py` e inicializa somente os módulos necessários para o comando; `await app.load_module()` continua carregando todos quando você usa o app diretamente.
+Os comandos `auth`, `migrate`, `server` e `balance` aceitam `--project`. Se omitido, procuram automaticamente `./watchguardian`. O CLI lê as configurações do `app` em `main.py` e inicializa somente os módulos necessários para o comando; `await app.load_module()` continua carregando todos quando você usa o app diretamente.
 
 ```bash
-watchguardian migrate make_tables --project ./apps/myapp
-watchguardian auth secret --project ./apps/myapp
-watchguardian auth token --type user_token --project ./apps/myapp
-watchguardian server run --project ./apps/myapp --host 0.0.0.0 --port 8080
-watchguardian balance create --project ./apps/myapp
-watchguardian balance valid --project ./apps/myapp
-watchguardian balance logs --project ./apps/myapp --token SEU_TOKEN
+watchguardian migrate make_tables
+watchguardian auth secret
+watchguardian auth token --type user_token
+watchguardian server run --host 0.0.0.0 --port 8080
+watchguardian balance create
+watchguardian balance valid
+watchguardian balance logs --token SEU_TOKEN
 ```
 
-Se a pasta ou os arquivos `main.py` e `settings.json` estiverem ausentes, o comando falha com erro.
+Para escolher outra pasta, passe `--project ./apps/myapp`. Se não houver um projeto padrão, os comandos que precisarem de configuração procuram o arquivo de ambiente; sem projeto ou configuração necessária, encerram com erro.
 
 ### Banco
 
@@ -860,7 +868,7 @@ Os métodos de inicialização são idempotentes para as instâncias armazenadas
 - Após `await app.load_module()`, os módulos ficam disponíveis em `app.watch_db`, `app.watch_logs`, `app.watch_obs`, `app.watch_auth`, `app.cache`, `app.client_http`, `app.watch_server`, `app.server_app`, `app.replicators`, `app.watch_balance` e `app.balance_app`. Esses atributos são encaminhados ao `WatchModule`; também é possível acessar o agregador por `app.module`.
 - `copy_watchguardian(path=None, name=None, env_file=None) -> Path`: copia o template para `path/name`, gera o `settings.json` no destino e retorna o caminho criado. `path=None` usa o diretório atual; `name=None` usa `WatchGuardian`; o arquivo `file.py` não é copiado junto com o template.
 
-A CLI `startproject` chama essa função. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
+A CLI `project start` chama essa função. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
 
 
 ## Exemplo rápido da versão pública
