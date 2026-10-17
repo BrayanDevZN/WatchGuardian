@@ -54,7 +54,10 @@ def server(subparser) -> None:
 
 
 def _settings(env_file: str | None) -> Settings:
-    return Settings(env_file=env_file) if env_file is not None else Settings()
+    settings = Settings(env_file=env_file) if env_file is not None else Settings()
+    settings.add_secret("url")
+    settings.required_secrets("url")
+    return settings
 
 
 def _token(settings: Settings, token: str | None) -> str:
