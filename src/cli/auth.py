@@ -8,6 +8,8 @@ import json
 from src.logs.module import Logs
 from src.service.module import Settings, WatchAuth
 
+from .project import add_project_argument, load_project
+
 
 logger = Logs(loglevel="SUCCESS")
 
@@ -23,9 +25,11 @@ def auth(subparser) -> None:
         required=True
     )
 
-    auth_cmd.add_parser("secret")
+    secret_parser = auth_cmd.add_parser("secret")
+    add_project_argument(secret_parser)
 
     token_parser = auth_cmd.add_parser("token")
+    add_project_argument(token_parser)
     token_parser.add_argument(
         "--type",
         dest="token_type",
@@ -42,9 +46,10 @@ def auth(subparser) -> None:
 
 
 async def run_auth(args) -> None:
+    project = await load_project(args.project)
 
     if args.command == "secret":
-        watch_auth = WatchAuth()
+        watch_auth = project.watch_auth if project is not None else WatchAuth()
         secret = watch_auth.secret()
 
         logger.success(
@@ -52,20 +57,19 @@ async def run_auth(args) -> None:
         )
 
     elif args.command == "token":
-        env = args.env_file
+        if project is not None:
+            watch_auth = project.watch_auth
+        else:
+            env = args.env_file
+            settings = (
+                Settings(env_file=env)
+                if env is not None
+                else Settings()
+            )
 
-        settings = (
-            Settings(env_file=env)
-            if env is not None
-            else Settings()
-        )
-
-        settings.add_secret("secret")
-        settings.required_secrets("secret")
-
-        watch_auth = WatchAuth(
-            settings=settings
-        )
+            settings.add_secret("secret")
+            settings.required_secrets("secret")
+            watch_auth = WatchAuth(settings=settings)
 
         payload = (
             json.loads(args.payload)
