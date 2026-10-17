@@ -125,7 +125,7 @@ async def load_project_modules(
         "cache": module.cache_module,
         "client": module.client,
         "server": module.server,
-        "replicators": module.replica_module,
+        "replicators": getattr(module, "replica_module", None),
         "balance": module.balance,
     }
 
@@ -137,6 +137,13 @@ async def load_project_modules(
             raise ValueError(
                 f"Unknown project module {name!r}. Available modules: {available}"
             ) from None
+
+        if name == "replicators" and initializer is None:
+            # Older generated templates did not expose replica_module().
+            from WatchGuardian.balance import Replicators
+
+            module.replicators = Replicators(settings=settings)
+            continue
 
         initialized = initializer()
         if inspect.isawaitable(initialized):
