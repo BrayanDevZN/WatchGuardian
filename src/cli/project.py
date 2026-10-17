@@ -1,4 +1,4 @@
-"""Load a generated WatchGuardian project for CLI commands."""
+"""Load generated WatchGuardian projects for CLI commands."""
 
 import importlib.util
 import inspect
@@ -7,20 +7,13 @@ from pathlib import Path
 from types import ModuleType
 
 
-def add_project_argument(parser, *, default=None) -> None:
-    """Add the optional generated-project directory argument."""
-    parser.add_argument(
-        "--project",
-        type=Path,
-        default=default,
-        help="Generated project directory containing main.py and settings.json",
-    )
-
-
-def load_project_app(project_path: str | Path | None):
-    """Import and return the generated project's app without loading modules."""
+def resolve_project_path(project_path: str | Path | None) -> Path | None:
+    """Resolve an explicit project or the default ./watchguardian project."""
     if project_path is None:
-        return None
+        candidate = (Path.cwd() / "watchguardian").resolve()
+        if not candidate.is_dir():
+            return None
+        project_path = candidate
 
     directory = Path(project_path).expanduser().resolve()
     if not directory.exists() or not directory.is_dir():
@@ -32,7 +25,26 @@ def load_project_app(project_path: str | Path | None):
         raise FileNotFoundError(f"Project entry point was not found: {main_file}")
     if not settings_file.is_file():
         raise FileNotFoundError(f"Project settings file was not found: {settings_file}")
+    return directory
 
+
+def add_project_argument(parser, *, default=None) -> None:
+    """Add the optional generated-project directory argument."""
+    parser.add_argument(
+        "--project",
+        type=Path,
+        default=default,
+        help="Generated project directory (defaults to ./watchguardian when present)",
+    )
+
+
+def load_project_app(project_path: str | Path | None):
+    """Import and return the generated project's app without loading modules."""
+    directory = resolve_project_path(project_path)
+    if directory is None:
+        return None
+
+    main_file = directory / "main.py"
     package_name = f"watchguardian_project_{abs(hash(directory))}"
     package = ModuleType(package_name)
     package.__path__ = [str(directory)]
@@ -58,7 +70,6 @@ def load_project_app(project_path: str | Path | None):
         raise AttributeError(
             f"Project entry point must define app with an async load_module(): {main_file}"
         )
-
     return app
 
 
@@ -82,7 +93,7 @@ def load_project_settings(app):
 
     app.local = env_file is None
     app.http = None if app.local else True
-    settings = ProjectSettings(env_file=env_file, local=app.local).get()
+    settings = ProjectSettings(env_file=env_file, local=True).get()
 
     configs = resolve_project_configs(
         project_root=app.settings_path.parent,
@@ -140,7 +151,7 @@ async def load_project_modules(
 
         if name == "replicators" and initializer is None:
             # Older generated templates did not expose replica_module().
-            from WatchGuardian.balance import Replicators
+            from src.service.module import Replicators
 
             module.replicators = Replicators(settings=settings)
             continue
@@ -157,5 +168,4 @@ async def load_project(project_path: str | Path | None):
     app = load_project_app(project_path)
     if app is None:
         return None
-
     return await app.load_module()
