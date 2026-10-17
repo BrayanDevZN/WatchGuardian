@@ -61,6 +61,39 @@ def load_project_app(project_path: str | Path | None):
     return app
 
 
+def load_project_settings(app):
+    """Build project Settings without starting logging, server, or balance modules."""
+    load_settings = getattr(app, "load_settings", None)
+    if callable(load_settings):
+        return load_settings()
+
+    # Compatibility for projects generated before ProjectApp.load_settings existed.
+    from src.project.watchguardian.settings import (
+        ProjectSettings,
+        resolve_project_configs,
+    )
+
+    env_file = app.project_config.get("env_file")
+    if env_file is not None:
+        env_path = Path(env_file)
+        if not env_path.is_absolute():
+            env_file = str(app.settings_path.parent / env_path)
+
+    app.local = env_file is None
+    app.http = None if app.local else True
+    settings = ProjectSettings(env_file=env_file, local=app.local).get()
+
+    configs = resolve_project_configs(
+        project_root=app.settings_path.parent,
+        configs=app.project_config.get("configs", {}),
+    )
+    for name, value in configs.items():
+        settings.add_config({"name": name, "value": value})
+
+    app.settings = settings
+    return settings
+
+
 async def load_project(project_path: str | Path | None):
     """Import app from a project directory and return its loaded WatchModule."""
     app = load_project_app(project_path)
