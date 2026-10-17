@@ -14,8 +14,6 @@ src/server/
 ├── events.py
 ├── manage.py
 ├── midlleware.py
-├── routes/
-│   └── ws.py
 ├── handles/
 │   ├── auth.py
 │   ├── logs.py

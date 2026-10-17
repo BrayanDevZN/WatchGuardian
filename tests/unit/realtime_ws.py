@@ -8,8 +8,11 @@ from fastapi import WebSocketDisconnect
 
 from src.core.module import Settings
 from src.server.events import RealtimeEvents
-from src.server.routes import realtime_router
-from src.server.handles.ws import logs_websocket, obs_websocket
+from src.server.handles.ws import (
+    logs_websocket,
+    obs_websocket,
+    realtime_router,
+)
 from src.service.token import WatchAuth
 
 

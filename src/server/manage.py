@@ -7,7 +7,7 @@ from .handles.logs import logs_router
 from .handles.obs import obs_router
 from .handles.auth import auth_router
 from .handles.health import health_router
-from .routes import realtime_router
+from .handles.ws import realtime_router
 from .events import RealtimeEvents
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
