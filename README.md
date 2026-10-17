@@ -442,7 +442,9 @@ No modo de projeto, essas configurações ficam em `settings.json`, dentro de `c
 }
 ```
 
-`replicator_urls` lista os servidores de destino. `replicator_methods` aceita `*` ou uma lista de métodos; `replicator_paths` aceita `*` ou caminhos reconhecidos pelo replicator. `replicator_limit` e `replicator_expires` configuram os parâmetros de limite e expiração usados por cada réplica.
+`replicator_urls` lista as URLs dos servidores de destino. `replicator_methods` aceita `*` ou uma lista de métodos HTTP; `replicator_paths` aceita `*` ou uma lista com `logs` e/ou `obs`. `replicator_limit` e `replicator_expires` são os parâmetros de limite e expiração passados às instâncias `Replicator`.
+
+O scaffold local começa com `http://localhost:8000` como URL de réplica. Troque esse valor pelas URLs das suas aplicações antes de iniciar o balanceador; apontar o balanceador para ele próprio cria um ciclo de redirecionamento.
 
 Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de `Replicator` pelo formato CLI `modulo:atributo`. Com projeto, as réplicas são criadas das configurações acima.
 
