@@ -2,18 +2,10 @@
 
 from fastapi import FastAPI
 
-from src.service.module import (
-    Settings,
-    WatchLogs,
-    WatchAuth,
-    WatchObs,
-    WatchDb,
-    CacheManage,
-    WatchServer,
-    ClientHttp,
-    WatchBalance,
-    Replicators,
-)
+from WatchGuardian import Settings, WatchLogs, WatchAuth, WatchObs
+from WatchGuardian.database import WatchDb, CacheManage
+from WatchGuardian.server import WatchServer, ClientHttp
+from WatchGuardian.balance import WatchBalance, Replicators
 
 
 class WatchModule:
