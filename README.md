@@ -857,6 +857,7 @@ Os métodos de inicialização são idempotentes para as instâncias armazenadas
 
 - `ProjectApp()`: lê o `settings.json` ao lado de `main.py`.
 - `load_module() -> WatchModule`: resolve o `env_file` relativo à pasta do projeto, aplica configurações do JSON, carrega todos os módulos e retorna o agregador em `app.module`.
+- Após `await app.load_module()`, os módulos ficam disponíveis em `app.watch_db`, `app.watch_logs`, `app.watch_obs`, `app.watch_auth`, `app.cache`, `app.client_http`, `app.watch_server`, `app.server_app`, `app.replicators`, `app.watch_balance` e `app.balance_app`. Esses atributos são encaminhados ao `WatchModule`; também é possível acessar o agregador por `app.module`.
 - `copy_watchguardian(path=None, name=None, env_file=None) -> Path`: copia o template para `path/name`, gera o `settings.json` no destino e retorna o caminho criado. `path=None` usa o diretório atual; `name=None` usa `WatchGuardian`; o arquivo `file.py` não é copiado junto com o template.
 
 A CLI `startproject` chama essa função. Ajuste as configurações em `settings.json` antes de executar servidor ou balanceador.
