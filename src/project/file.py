@@ -1,10 +1,11 @@
 """Copy the WatchGuardian project template and create project settings."""
 
 import json
+import keyword
 import shutil
 from pathlib import Path
 
-from WatchGuardian import WatchLogs
+from src.service.module import WatchLogs
 
 from .watchguardian.settings import DEFAULT_CONFIGS
 
@@ -16,21 +17,27 @@ def copy_watchguardian(
 ) -> Path:
     """Copy the project template and generate settings.json in the new folder.
 
-    If path is omitted, the current working directory is used. If name is
-    omitted, the destination folder is named WatchGuardian. The optional
-    env_file path is stored in the generated settings.json.
+    Project folder names are normalized to lowercase. The default name is
+    myproject; watchguardian is reserved for the framework package.
     """
     logger = WatchLogs()
     template = Path(__file__).resolve().parent / "watchguardian"
     destination_root = Path(path) if path is not None else Path.cwd()
-    folder_name = "WatchGuardian" if name is None else name
+    folder_name = "myproject" if name is None else name.strip().lower()
 
-    if (
-        not folder_name
-        or Path(folder_name).name != folder_name
-        or folder_name in {".", ".."}
-    ):
-        error = ValueError("name must be a non-empty folder name, not a path.")
+    if not folder_name.isidentifier() or keyword.iskeyword(folder_name):
+        error = ValueError(
+            "name must be a valid Python package name using lowercase letters, "
+            "numbers, or underscores."
+        )
+        logger.error(str(error))
+        raise error
+
+    if folder_name == "watchguardian":
+        error = ValueError(
+            "'watchguardian' is reserved for the WatchGuardian framework. "
+            "Choose another project name."
+        )
         logger.error(str(error))
         raise error
 
