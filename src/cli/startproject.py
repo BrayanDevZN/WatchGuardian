@@ -17,7 +17,7 @@ def _add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--name",
         default=None,
-        help="Name of the copied WatchGuardian folder (defaults to WatchGuardian)",
+        help="Lowercase project package name (defaults to myproject; watchguardian is reserved)",
     )
     parser.add_argument(
         "--env-file",
