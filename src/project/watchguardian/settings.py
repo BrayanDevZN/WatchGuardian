@@ -3,7 +3,7 @@
 from pathlib import Path
 from secrets import token_urlsafe
 
-from WatchGuardian import Settings, WatchLogs
+from src.service.module import Settings, WatchLogs
 
 
 DEFAULT_CONFIGS = {
