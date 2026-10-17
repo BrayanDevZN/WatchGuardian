@@ -2,7 +2,7 @@
 
 Este documento explica como configurar, iniciar e consumir a API HTTP e os WebSockets do servidor WatchGuardian.
 
-O servidor é construído sobre FastAPI e oferece rotas HTTP para logs e observabilidade, autenticação/refresh de token e canais WebSocket em tempo real.
+O servidor é construído sobre FastAPI e oferece rotas HTTP para logs e observabilidade, autenticação/refresh de token e canais WebSocket em tempo real. Para criar um projeto com o CLI, carregar suas configurações e iniciar o servidor, consulte [CLI e projetos](cli.md).
 
 ---
 
@@ -200,7 +200,7 @@ Ela é necessária para:
 É possível gerar uma secret pela CLI:
 
 ```bash
-python -m src.cli.main auth secret
+watchguardian auth secret
 ```
 
 O comando apenas imprime a secret. Ele não salva automaticamente no `.env`.
@@ -513,25 +513,25 @@ No formato atual ele não possui `exp`.
 User token:
 
 ```bash
-python -m src.cli.main auth --env-file .env token --type user_token
+watchguardian auth --env-file .env token --type user_token
 ```
 
 Com payload:
 
 ```bash
-python -m src.cli.main auth --env-file .env token --type user_token --payload '{"user_id":"123","role":"admin"}'
+watchguardian auth --env-file .env token --type user_token --payload '{"user_id":"123","role":"admin"}'
 ```
 
 Refresh token:
 
 ```bash
-python -m src.cli.main auth --env-file .env token --type refresh_token --payload '{"user_id":"123"}'
+watchguardian auth --env-file .env token --type refresh_token --payload '{"user_id":"123"}'
 ```
 
 Gerar secret:
 
 ```bash
-python -m src.cli.main auth secret
+watchguardian auth secret
 ```
 
 ---
