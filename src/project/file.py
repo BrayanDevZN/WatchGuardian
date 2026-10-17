@@ -55,7 +55,21 @@ def copy_watchguardian(
         shutil.copytree(template, destination)
 
         settings_path = destination / "settings.json"
-        project_settings = json.loads(settings_path.read_text(encoding="utf-8"))
+        if settings_path.is_file():
+            project_settings = json.loads(
+                settings_path.read_text(encoding="utf-8")
+            )
+        else:
+            project_settings = {
+                "name": "WatchGuardian",
+                "path": None,
+                "env_file": None,
+                "local": True,
+                "http": None,
+                "loglevel": "INFO",
+                "configs": dict(DEFAULT_CONFIGS),
+            }
+
         use_local_settings = env_file is None
         project_settings.update(
             {
