@@ -117,22 +117,28 @@ class WatchModule:
 
         return self.watch_server
 
-    def balance(self) -> WatchBalance:
-        """Create Replicators and run WatchBalance to build its FastAPI app."""
-        if self.watch_balance is None:
+    def replica_module(self) -> Replicators:
+        """Create the configured replicas without starting a balance app."""
+        if self.replicators is None:
             self.logger.info("Initializing Replicators.")
             self.replicators = Replicators(settings=self.settings)
             self.logger.success("Replicators initialized.")
 
+        return self.replicators
+
+    def balance(self) -> WatchBalance:
+        """Create Replicators and run WatchBalance to build its FastAPI app."""
+        if self.watch_balance is None:
+            replicators = self.replica_module()
             self.logger.info("Initializing WatchBalance.")
-            self.watch_balance = WatchBalance(replicas=self.replicators)
+            self.watch_balance = WatchBalance(replicas=replicators)
             self.balance_app = self.watch_balance.run()
             self.logger.success("WatchBalance initialized and started.")
 
         return self.watch_balance
 
     async def load_modules(self) -> "WatchModule":
-        """Initialize all modules and run the server and balance apps."""
+        """Initialize every module and run the server and balance apps."""
         self.logger.info("Loading WatchGuardian modules.")
 
         await self.database()
