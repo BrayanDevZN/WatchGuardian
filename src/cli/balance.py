@@ -158,7 +158,11 @@ async def run_balance(args) -> None:
             ["--host", args.host, "--port", str(args.port)]
         )
         process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
-        logger.success(f"Balance started in detached mode. PID: {process.pid}")
+        url = f"http://{args.host}:{args.port}"
+        logger.success(
+            f"Balance started at {logger.highlighted_white(url)} "
+            f"(detached, PID: {process.pid})"
+        )
         return
 
     project = await load_project(args.project)
@@ -183,8 +187,16 @@ async def run_balance(args) -> None:
             if project is not None
             else WatchBalance(replicas=replicas).run()
         )
-        logger.success(f"Balance started at http://{args.host}:{args.port}")
-        config = uvicorn.Config(app, host=args.host, port=args.port)
+        url = f"http://{args.host}:{args.port}"
+        logger.success(f"Balance started at {logger.highlighted_white(url)}")
+        config = uvicorn.Config(
+            app,
+            host=args.host,
+            port=args.port,
+            log_config=None,
+            log_level="critical",
+            access_log=False,
+        )
         server = uvicorn.Server(config)
         await server.serve()
         return
