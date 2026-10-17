@@ -16,8 +16,8 @@ def add_project_argument(parser, *, default=None) -> None:
     )
 
 
-async def load_project(project_path: str | Path | None):
-    """Import app from a project directory and return its loaded WatchModule."""
+def load_project_app(project_path: str | Path | None):
+    """Import and return the generated project's app without loading modules."""
     if project_path is None:
         return None
 
@@ -57,5 +57,14 @@ async def load_project(project_path: str | Path | None):
         raise AttributeError(
             f"Project entry point must define app with an async load_module(): {main_file}"
         )
+
+    return app
+
+
+async def load_project(project_path: str | Path | None):
+    """Import app from a project directory and return its loaded WatchModule."""
+    app = load_project_app(project_path)
+    if app is None:
+        return None
 
     return await app.load_module()
