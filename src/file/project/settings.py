@@ -14,55 +14,55 @@ class ProjectSettings:
         local: bool = False,
     ) -> None:
         self.logs = WatchLogs()
-        self.logs.info("Inicializando ProjectSettings.")
+        self.logs.info("Initializing ProjectSettings.")
 
         self.settings = Settings(env_file=env_file)
         self.local = local
 
         self.logs.info(
-            f"ProjectSettings inicializado (env_file={'definido' if env_file else 'padrão'}, "
+            f"ProjectSettings initialized (env_file={'set' if env_file else 'default'}, "
             f"local={self.local})."
         )
 
     def local_secret(self) -> None:
         """Adiciona secrets consumidas pelos módulos públicos."""
         defaults = {
-            # CacheManage, WatchDb e Replicators
+            # CacheManage, WatchDb and Replicators
             "host": "localhost",
             "port": "6379",
             "password": None,
-            # WatchServer e middleware de rate limit
+            # WatchServer and rate limit middleware
             "origin": "*",
             "rate_limit": "100",
             # WatchAuth
             "secret": token_urlsafe(32),
-            # ClientHttp e WatchDb(http=True)
+            # ClientHttp and WatchDb(http=True)
             "url": "http://localhost:8000",
             "token": None,
             # WatchDb(http=False)
             "url_db": None,
         }
 
-        self.logs.info("Iniciando configuração local de secrets.")
+        self.logs.info("Starting local secrets setup.")
         self.settings.add_secret(list(defaults))
 
         for name, default in defaults.items():
             value = self.settings.get_secret(name)
             if value is None or value == "":
                 self.settings.secrets[name] = default
-                source = "default local"
+                source = "local default"
             else:
-                source = "ambiente/.env"
+                source = "environment/.env"
 
-            # Registra o nome e a origem, nunca o conteúdo de uma secret.
-            self.logs.info(f"Secret '{name}' configurada ({source}).")
+            # Log the variable name and source, never the secret value.
+            self.logs.info(f"Secret '{name}' configured ({source}).")
 
-        self.logs.success("Configuração local de secrets concluída.")
+        self.logs.success("Local secrets setup completed.")
 
     def local_config(self) -> None:
         """Adiciona configs consumidas pelo banco e pelo balanceador."""
         defaults = {
-            # WatchDb local
+            # Local WatchDb
             "path": None,
             # Replicators / WatchBalance
             "replicator_name": "watchguardian-local",
@@ -73,29 +73,29 @@ class ProjectSettings:
             "replicator_expires": 60,
         }
 
-        self.logs.info("Iniciando configuração local de configs.")
+        self.logs.info("Starting local config setup.")
 
         for name, value in defaults.items():
             if name not in self.settings.configs:
                 self.settings.add_config({"name": name, "value": value})
-                source = "default local"
+                source = "local default"
             else:
-                source = "valor existente"
+                source = "existing value"
 
-            self.logs.info(f"Config '{name}' registrada ({source}).")
+            self.logs.info(f"Config '{name}' registered ({source}).")
 
-        self.logs.success("Configuração local de configs concluída.")
+        self.logs.success("Local config setup completed.")
 
     def get(self) -> Settings:
         """Retorna Settings; aplica defaults quando local=True."""
-        self.logs.info("Preparando Settings do projeto.")
+        self.logs.info("Preparing project Settings.")
 
         if self.local:
-            self.logs.info("Modo local habilitado.")
+            self.logs.info("Local mode enabled.")
             self.local_secret()
             self.local_config()
         else:
-            self.logs.info("Modo local desabilitado; defaults locais não serão aplicados.")
+            self.logs.info("Local mode disabled; local defaults will not be applied.")
 
-        self.logs.success("Settings do projeto pronto para uso.")
+        self.logs.success("Project Settings are ready.")
         return self.settings
