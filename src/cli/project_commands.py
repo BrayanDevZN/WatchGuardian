@@ -40,6 +40,8 @@ def _project_path(value: str | Path | None) -> Path:
 def _write_env(path: Path, source: str | Path | None = None) -> None:
     values = dict(LOCAL_SECRETS)
     values["secret"] = token_urlsafe(32)
+    values.update(DEFAULT_CONFIGS)
+
     if source is not None:
         source_path = Path(source).expanduser().resolve()
         if not source_path.is_file():
@@ -49,7 +51,9 @@ def _write_env(path: Path, source: str | Path | None = None) -> None:
                 values[name] = value
 
     lines = ["# WatchGuardian local environment"]
-    lines.extend(f"{name}={value}" for name, value in values.items())
+    for name, value in values.items():
+        rendered = json.dumps(value) if isinstance(value, (list, dict)) else value
+        lines.append(f"{name}={rendered}")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -62,7 +66,10 @@ def project(subparsers) -> None:
     start_parser.add_argument("--name", default=None)
     start_parser.add_argument("--env-file", type=Path, default=None)
     start_parser.add_argument(
-        "--with_env", "--with-env", dest="with_env", action="store_true",
+        "--with_env",
+        "--with-env",
+        dest="with_env",
+        action="store_true",
         help="Create a .env file populated with local defaults",
     )
 
@@ -77,18 +84,20 @@ def project(subparsers) -> None:
 
 def run_project(args) -> Path | None:
     if args.project_command == "start":
+        source_env = args.env_file.expanduser().resolve() if args.env_file else None
+        if source_env is not None and not source_env.is_file():
+            raise FileNotFoundError(f"Environment file does not exist: {source_env}")
+
         destination = copy_watchguardian(
             path=args.path,
             name=args.name,
-            env_file=args.env_file,
+            env_file=None if args.with_env else source_env,
         )
         if args.with_env:
-            _write_env(destination / ".env", args.env_file)
+            _write_env(destination / ".env", source_env)
             settings_path = destination / "settings.json"
             config = json.loads(settings_path.read_text(encoding="utf-8"))
-            config["env_file"] = ".env"
-            config["local"] = True
-            config["http"] = None
+            config.update(env_file=".env", local=True, http=None)
             settings_path.write_text(
                 json.dumps(config, indent=4) + "\n", encoding="utf-8"
             )
