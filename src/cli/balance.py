@@ -1,13 +1,13 @@
 """CLI para criar e consultar o balanceador WatchGuardian."""
 
 import importlib
-import os
 
 import uvicorn
 
 from src.logs.module import Logs
 from src.replicator.module import Replicator, Replicators
 from src.service.balance import WatchBalance
+from src.service.module import Settings
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -50,10 +50,11 @@ def balance(subparser) -> None:
         help="Buscar logs nas réplicas saudáveis",
     )
     logs_parser.add_argument("target", metavar="caminho:objeto")
+    logs_parser.add_argument("--token", default=None)
     logs_parser.add_argument(
-        "--token",
+        "--env-file",
         default=None,
-        help="Token de usuário; se omitido, usa a variável de ambiente 'token'",
+        help="Arquivo .env usado para obter o token (somente neste comando)",
     )
 
 
@@ -117,13 +118,13 @@ def _print_log(item: dict, replica_url: str) -> None:
     method(metadata)
 
 
-def _get_token(token: str | None) -> str:
-    resolved = token or os.getenv("token")
-    if not resolved:
-        raise SystemExit(
-            "Informe --token ou defina a variável de ambiente 'token'."
-        )
-    return resolved
+def _get_token(token: str | None, env_file: str | None) -> str:
+    if token:
+        return token
+
+    settings = Settings(env_file=env_file)
+    settings.add_secret("token")
+    return settings.required_secrets("token")
 
 
 async def run_balance(args) -> None:
@@ -154,7 +155,11 @@ async def run_balance(args) -> None:
         return
 
     if args.command == "logs":
-        token = _get_token(args.token)
+        try:
+            token = _get_token(args.token, args.env_file)
+        except Exception as error:
+            raise SystemExit(f"Não foi possível obter o token: {error}") from error
+
         if not healthy:
             logger.warning("Nenhuma réplica saudável encontrada.")
             return
