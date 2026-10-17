@@ -450,11 +450,14 @@ Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de
 
 ## Projeto gerado: `ProjectApp` e `WatchModule`
 
-O comando `watchguardian startproject` cria uma pasta independente para iniciar uma aplicação com o framework. Ela contém:
+O comando `watchguardian startproject` copia a pasta-template `src/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`. O template contém:
 
-- uma cópia do pacote público `WatchGuardian/`;
-- `main.py`, que cria e exporta o objeto `app`;
-- `settings.json`, com o nome, o arquivo de ambiente, o modo de execução, o nível de log e as configurações.
+- o pacote público `WatchGuardian/`;
+- `main.py`, que cria e exporta `app`;
+- `manage.py`, `module.py` e `settings.py`, que inicializam e conectam os módulos;
+- `settings.json`, com as configurações iniciais do projeto.
+
+O arquivo `src/project/file.py` é o copiador: ele duplica essa pasta-template, ajusta o nome, o caminho e o arquivo de ambiente no `settings.json`, e salva a cópia no destino escolhido.
 
 Exemplo:
 
@@ -493,7 +496,7 @@ Também é possível iniciar o agregador no código, sem usar a pasta gerada:
 
 ```python
 import asyncio
-from src.project.manage import watch_manage
+from src.project.watchguardian.manage import watch_manage
 
 async def main():
     modules = await watch_manage(env_file=None)
@@ -767,7 +770,9 @@ WatchGuardian/
 │   ├── core/
 │   ├── database/
 │   ├── logs/
-│   ├── project/              # agregador e configuração do projeto
+│   ├── project/
+│   │   ├── file.py           # copiador do projeto
+│   │   └── watchguardian/    # template completo copiado pelo CLI
 │   ├── server/
 │   ├── service/
 │   └── util/
