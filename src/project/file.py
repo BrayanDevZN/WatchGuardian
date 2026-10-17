@@ -52,7 +52,11 @@ def copy_watchguardian(
 
     try:
         destination_root.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(template, destination)
+        shutil.copytree(
+            template,
+            destination,
+            ignore=shutil.ignore_patterns("file.py"),
+        )
 
         use_local_settings = env_file is None
         project_settings = {
