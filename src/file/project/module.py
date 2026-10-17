@@ -1,5 +1,7 @@
 """Inicializa os módulos públicos do WatchGuardian com as mesmas Settings."""
 
+from fastapi import FastAPI
+
 from WatchGuardian import Settings, WatchLogs, WatchAuth, WatchObs
 from WatchGuardian.database import WatchDb, CacheManage
 from WatchGuardian.server import WatchServer, ClientHttp
@@ -27,8 +29,10 @@ class WatchModule:
         self.cache: CacheManage | None = None
         self.client_http: ClientHttp | None = None
         self.watch_server: WatchServer | None = None
+        self.server_app: FastAPI | None = None
         self.replicators: Replicators | None = None
         self.watch_balance: WatchBalance | None = None
+        self.balance_app: FastAPI | None = None
 
         self.logger.info(
             f"WatchModule inicializado (http={self.http}, loglevel={self.loglevel})."
@@ -104,16 +108,17 @@ class WatchModule:
         return self.client_http
 
     def server(self) -> WatchServer:
-        """Cria WatchServer usando as Settings compartilhadas."""
+        """Cria WatchServer e executa run() para obter a aplicação FastAPI."""
         if self.watch_server is None:
             self.logger.info("Inicializando WatchServer.")
             self.watch_server = WatchServer(settings=self.settings)
-            self.logger.success("WatchServer inicializado.")
+            self.server_app = self.watch_server.run()
+            self.logger.success("WatchServer inicializado e executado.")
 
         return self.watch_server
 
     def balance(self) -> WatchBalance:
-        """Cria Replicators e os conecta ao WatchBalance."""
+        """Cria Replicators e executa WatchBalance para obter a aplicação."""
         if self.watch_balance is None:
             self.logger.info("Inicializando Replicators.")
             self.replicators = Replicators(settings=self.settings)
@@ -121,12 +126,13 @@ class WatchModule:
 
             self.logger.info("Inicializando WatchBalance.")
             self.watch_balance = WatchBalance(replicas=self.replicators)
-            self.logger.success("WatchBalance inicializado.")
+            self.balance_app = self.watch_balance.run()
+            self.logger.success("WatchBalance inicializado e executado.")
 
         return self.watch_balance
 
     async def load_modules(self) -> "WatchModule":
-        """Inicializa os módulos públicos e retorna este agregador."""
+        """Inicializa todos os módulos e executa os apps de servidor e balance."""
         self.logger.info("Iniciando carregamento dos módulos WatchGuardian.")
 
         await self.database()
