@@ -9,7 +9,7 @@ import uvicorn
 from src.logs.module import Logs
 from src.service.module import Cmd, Replicator, Replicators, Settings, WatchBalance
 
-from .project import add_project_argument, load_project
+from .project import add_project_argument, load_project_modules
 
 
 logger = Logs(loglevel="SUCCESS")
@@ -165,7 +165,8 @@ async def run_balance(args) -> None:
         )
         return
 
-    project = await load_project(args.project)
+    requested_modules = ("balance",) if args.command == "create" else ("replicators",)
+    project = await load_project_modules(args.project, requested_modules)
 
     if project is not None:
         if project.replicators is None:
