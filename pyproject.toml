@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watchguardian"
-version = "0.1.0"
+version = "0.1.1"
 description = "Observability, logging, database, authentication and server utilities for Python applications."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -34,4 +34,4 @@ watchguardian = "src.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["WatchGuardian*", "src*"]
+include = ["WatchGuardian", "WatchGuardian.*", "src", "src.*"]
