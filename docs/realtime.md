@@ -97,7 +97,7 @@ watchguardian server logs --token SEU_TOKEN --realtime
 watchguardian server obs --token SEU_TOKEN --realtime
 ```
 
-O token pode vir de `--token` ou do secret `token` do projeto carregado com `--project`.
+O token pode vir de `--token` ou do secret `token` do projeto carregado com `--project`. Sem essa opção, o CLI procura `./watchguardian` no diretório atual. Consulte também a [referência completa da CLI](cli.md).
 
 ## Redis, escopo e limites
 
