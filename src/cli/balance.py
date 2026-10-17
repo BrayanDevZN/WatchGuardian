@@ -9,6 +9,8 @@ import uvicorn
 from src.logs.module import Logs
 from src.service.module import Cmd, Replicator, Replicators, Settings, WatchBalance
 
+from .project import add_project_argument, load_project
+
 
 logger = Logs(loglevel="SUCCESS")
 
@@ -25,17 +27,18 @@ def balance(subparser) -> None:
 
     create_parser = balance_commands.add_parser(
         "create",
-        help="Criar o balanceador a partir de um objeto Python",
+        help="Criar o balanceador a partir de um objeto Python ou projeto",
     )
     create_parser.add_argument(
         "target",
         metavar="caminho:objeto",
+        nargs="?",
         help=(
             "caminho importável no formato modulo:atributo; "
-            "o atributo deve ser Replicators, uma lista de Replicator "
-            "ou uma função que retorne um desses valores"
+            "não é necessário quando --project é informado"
         ),
     )
+    add_project_argument(create_parser)
     create_parser.add_argument("--host", default="127.0.0.1")
     create_parser.add_argument("--port", type=int, default=8000)
     create_parser.add_argument(
@@ -48,13 +51,15 @@ def balance(subparser) -> None:
         "valid",
         help="Listar as URLs das réplicas saudáveis",
     )
-    valid_parser.add_argument("target", metavar="caminho:objeto")
+    valid_parser.add_argument("target", metavar="caminho:objeto", nargs="?")
+    add_project_argument(valid_parser)
 
     logs_parser = balance_commands.add_parser(
         "logs",
         help="Buscar logs nas réplicas saudáveis",
     )
-    logs_parser.add_argument("target", metavar="caminho:objeto")
+    logs_parser.add_argument("target", metavar="caminho:objeto", nargs="?")
+    add_project_argument(logs_parser)
     logs_parser.add_argument("--token", default=None)
     logs_parser.add_argument(
         "--env-file",
@@ -133,38 +138,52 @@ def _get_token(token: str | None, env_file: str | None) -> str:
 
 
 async def run_balance(args) -> None:
-    try:
-        replicas = await _replicas(args.target)
-    except (ImportError, AttributeError, TypeError, ValueError) as error:
-        raise SystemExit(
-            f"Não foi possível carregar as réplicas: {error}"
-        ) from error
+    if args.command == "create" and args.detached:
+        command_parts = [
+            sys.executable,
+            "-m",
+            "src.cli.main",
+            "balance",
+            "create",
+        ]
+
+        if args.project is not None:
+            command_parts.extend(["--project", str(args.project)])
+        elif args.target is not None:
+            command_parts.append(args.target)
+        else:
+            raise SystemExit("Provide a replica target or pass --project.")
+
+        command_parts.extend(
+            ["--host", args.host, "--port", str(args.port)]
+        )
+        process = Cmd.detached(" ".join(shlex.quote(part) for part in command_parts))
+        logger.success(f"Balance started in detached mode. PID: {process.pid}")
+        return
+
+    project = await load_project(args.project)
+
+    if project is not None:
+        if project.replicators is None:
+            raise RuntimeError("The project did not initialize Replicators.")
+        replicas = await project.replicators.get_replicas()
+    else:
+        if args.target is None:
+            raise SystemExit("Provide a replica target or pass --project.")
+        try:
+            replicas = await _replicas(args.target)
+        except (ImportError, AttributeError, TypeError, ValueError) as error:
+            raise SystemExit(
+                f"Não foi possível carregar as réplicas: {error}"
+            ) from error
 
     if args.command == "create":
-        if args.detached:
-            command = " ".join(
-                shlex.quote(part)
-                for part in (
-                    sys.executable,
-                    "-m",
-                    "src.cli.main",
-                    "balance",
-                    "create",
-                    args.target,
-                    "--host",
-                    args.host,
-                    "--port",
-                    str(args.port),
-                )
-            )
-            process = Cmd.detached(command)
-            logger.success(
-                f"Balance iniciado em detached. PID: {process.pid}"
-            )
-            return
-
-        app = WatchBalance(replicas=replicas).run()
-        logger.success(f"Balance iniciado em http://{args.host}:{args.port}")
+        app = (
+            project.balance_app
+            if project is not None
+            else WatchBalance(replicas=replicas).run()
+        )
+        logger.success(f"Balance started at http://{args.host}:{args.port}")
         config = uvicorn.Config(app, host=args.host, port=args.port)
         server = uvicorn.Server(config)
         await server.serve()
@@ -183,7 +202,14 @@ async def run_balance(args) -> None:
 
     if args.command == "logs":
         try:
-            token = _get_token(args.token, args.env_file)
+            if project is not None:
+                token = (
+                    args.token
+                    if args.token is not None
+                    else project.settings.required_secrets("token")
+                )
+            else:
+                token = _get_token(args.token, args.env_file)
         except Exception as error:
             raise SystemExit(f"Não foi possível obter o token: {error}") from error
 
