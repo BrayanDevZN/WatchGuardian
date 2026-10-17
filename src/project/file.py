@@ -36,7 +36,7 @@ def copy_watchguardian(
     if name is not None and folder_name == "watchguardian":
         error = ValueError(
             "The name 'watchguardian' is reserved for the default project folder. "
-            "Omit --name to use it, or choose another name."
+            "Omit --name to use the default, or choose another name."
         )
         logger.error(str(error))
         raise error
