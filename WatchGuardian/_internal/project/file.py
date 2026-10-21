@@ -21,7 +21,7 @@ def copy_watchguardian(
     myproject; watchguardian is reserved for the framework package.
     """
     logger = WatchLogs()
-    template = Path(__file__).resolve().parent / "watchguardian"
+    template = Path(__file__).resolve().parents[2] / "project" / "watchguardian"
     destination_root = Path(path) if path is not None else Path.cwd()
     folder_name = "watchguardian" if name is None else name.strip().lower()
 
