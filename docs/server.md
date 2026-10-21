@@ -9,7 +9,7 @@ O servidor é construído sobre FastAPI e oferece rotas HTTP para logs e observa
 ## 1. Estrutura do servidor
 
 ```text
-src/server/
+WatchGuardian/_internal/server/
 ├── depends.py
 ├── events.py
 ├── manage.py
@@ -44,7 +44,7 @@ O `Server` recebe uma instância de `Settings` já preparada.
 Com arquivo `.env` explícito:
 
 ```python
-from src.service.module import Settings
+from WatchGuardian import Settings
 
 settings = Settings(env_file=".env")
 ```
@@ -364,8 +364,8 @@ Se `url_db` não existir, isso não é erro. O sistema pode usar SQLite.
 ### 6.1 Usando o SQLite padrão
 
 ```python
-from src.server.manage import Server
-from src.service.module import Settings
+from WatchGuardian.server import WatchServer
+from WatchGuardian import Settings
 
 settings = Settings(env_file=".env")
 
@@ -379,7 +379,7 @@ settings.add_secret([
     "url_db",
 ])
 
-app = Server(settings=settings).run()
+app = WatchServer(settings=settings).run()
 ```
 
 Mesmo registrando `url_db`, ela pode estar ausente no ambiente. Nesse caso `get_secret("url_db")` retorna `None` e o banco cai no fallback.
@@ -393,8 +393,8 @@ sqlite+aiosqlite:///watch.db
 ### 6.2 Escolhendo a pasta do SQLite
 
 ```python
-from src.server.manage import Server
-from src.service.module import Settings
+from WatchGuardian.server import WatchServer
+from WatchGuardian import Settings
 
 settings = Settings(env_file=".env")
 
@@ -413,7 +413,7 @@ settings.add_config({
     "value": "./data"
 })
 
-app = Server(settings=settings).run()
+app = WatchServer(settings=settings).run()
 ```
 
 Nesse exemplo, se `url_db` for `None`, o banco será criado/usado em:

@@ -1,6 +1,6 @@
 """Executa a CLI real para testes funcionais."""
 
-from src.cli.main import main
+from WatchGuardian._internal.cli.main import main
 
 
 if __name__ == "__main__":

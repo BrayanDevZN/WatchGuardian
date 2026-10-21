@@ -2,7 +2,7 @@
 
 import sys
 
-from src.service.module import Cmd
+from WatchGuardian._internal.service.module import Cmd
 
 
 def test_run() -> None:

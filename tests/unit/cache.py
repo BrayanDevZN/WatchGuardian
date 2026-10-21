@@ -5,7 +5,7 @@ Teste de CacheManage
 import asyncio
 import os
 
-from src.service.module import CacheManage, Settings
+from WatchGuardian._internal.service.module import CacheManage, Settings
 
 
 async def test_cache() -> None:

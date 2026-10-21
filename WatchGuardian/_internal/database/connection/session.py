@@ -1,0 +1,23 @@
+from WatchGuardian._internal.logs.module import Logs
+logger = Logs(loglevel="SUCCESS")
+
+"""
+Cria orquestrador de sessoes
+"""
+
+from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, AsyncEngine
+
+
+def create_session(engine: AsyncEngine) -> AsyncSession:
+    try:
+        logger.info("Creating session factory...")
+
+        session = async_sessionmaker(engine, expire_on_commit=False)
+
+        logger.success("Session factory created successfully.")
+
+        return session
+
+    except Exception as error:
+        logger.error(f"Failed to create session factory: {error}")
+        raise

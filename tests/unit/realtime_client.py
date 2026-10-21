@@ -4,8 +4,8 @@ import asyncio
 import json
 from unittest.mock import patch
 
-from src.client.manage import Client
-from src.server.events import RealtimeEvents
+from WatchGuardian._internal.client.manage import Client
+from WatchGuardian._internal.server.events import RealtimeEvents
 
 
 class FakeWebSocket:
@@ -34,7 +34,7 @@ class FakeConnection:
 
 
 async def test_client_stream(path: str, method_name: str, event_type: str) -> None:
-    with patch("src.client.manage.connect", return_value=FakeConnection(event_type)) as connect_mock:
+    with patch("WatchGuardian._internal.client.manage.connect", return_value=FakeConnection(event_type)) as connect_mock:
         client = Client("https://watchguardian.example/base")
         stream = getattr(client, method_name)("test-token")
         events = [event async for event in stream]

@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 from unittest.mock import patch
 
-import src.cli.project as project_cli
+import WatchGuardian._internal.cli.project as project_cli
 
 
 class FakeProjectApp:

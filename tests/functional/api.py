@@ -1,6 +1,6 @@
 """Configuração local da API do WatchGuardian para testes funcionais."""
 
-from src.service.module import Settings, WatchServer
+from WatchGuardian._internal.service.module import Settings, WatchServer
 
 
 TEST_SECRET = "watchguardian-functional-test-secret-2026"

@@ -1,1 +1,1 @@
-from src.service.module import ClientHttp, WatchServer
+from WatchGuardian._internal.service.module import ClientHttp, WatchServer

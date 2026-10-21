@@ -1,4 +1,4 @@
-from src.logs.module import Logs, logger
+from WatchGuardian._internal.logs.module import Logs, logger
 
 
 def test_logs() -> None:

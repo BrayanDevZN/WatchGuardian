@@ -33,7 +33,7 @@ jobs:
               run: pip install -r requirements.txt
 
             - name: bootstrap
-              run: python -m src.cli.main migrate make_tables
+              run: python -m WatchGuardian._internal.cli.main migrate make_tables
 
             - name: unit
               run:
@@ -57,7 +57,7 @@ jobs:
             
 
             - name: drop tables
-              run: python -m src.cli.main migrate drop
+              run: python -m WatchGuardian._internal.cli.main migrate drop
 
             
             

@@ -1,7 +1,7 @@
 "teste de replicate"
 
-from src.replicator.module import Replicator, Replicators
-from src.service.module import CacheManage, Settings
+from WatchGuardian._internal.replicator.module import Replicator, Replicators
+from WatchGuardian._internal.service.module import CacheManage, Settings
 import asyncio
 import os
 

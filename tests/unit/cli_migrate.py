@@ -8,8 +8,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from src.cli.migrate import configure_project_database_path, migrate
-from src.project.watchguardian.settings import resolve_project_configs
+from WatchGuardian._internal.cli.migrate import configure_project_database_path, migrate
+from WatchGuardian.project.watchguardian.settings import resolve_project_configs
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -77,7 +77,7 @@ def test_app_resolves_database_path_from_project_root(tmp_path: Path) -> None:
 
 
 def test_project_migration_does_not_start_all_modules() -> None:
-    migrate_cli = importlib.import_module("src.cli.migrate")
+    migrate_cli = importlib.import_module("WatchGuardian._internal.cli.migrate")
     events = []
 
     class FakeApp:

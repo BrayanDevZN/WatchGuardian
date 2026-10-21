@@ -6,14 +6,14 @@ from types import SimpleNamespace
 
 from fastapi import WebSocketDisconnect
 
-from src.core.module import Settings
-from src.server.events import RealtimeEvents
-from src.server.handles.ws import (
+from WatchGuardian._internal.core.module import Settings
+from WatchGuardian._internal.server.events import RealtimeEvents
+from WatchGuardian._internal.server.handles.ws import (
     logs_websocket,
     obs_websocket,
     realtime_router,
 )
-from src.service.token import WatchAuth
+from WatchGuardian._internal.service.token import WatchAuth
 
 
 class FakeWebSocket:

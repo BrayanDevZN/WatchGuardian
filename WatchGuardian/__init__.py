@@ -1,1 +1,1 @@
-from src.service.module import Settings, WatchLogs, WatchObs, WatchAuth
+from WatchGuardian._internal.service.module import Settings, WatchLogs, WatchObs, WatchAuth

@@ -2,7 +2,7 @@
 
 import argparse
 
-from src.cli.server import server
+from WatchGuardian._internal.cli.server import server
 
 
 def test_realtime_defaults_to_false_and_is_opt_in() -> None:

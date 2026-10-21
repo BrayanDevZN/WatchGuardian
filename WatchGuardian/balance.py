@@ -1,1 +1,1 @@
-from src.service.module import Replicators, Replicator, WatchBalance
+from WatchGuardian._internal.service.module import Replicators, Replicator, WatchBalance

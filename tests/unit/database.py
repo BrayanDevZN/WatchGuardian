@@ -4,8 +4,8 @@ Teste de db.
 
 import asyncio
 
-from src.database.manage import ControlDb
-from src.core.module import config_url
+from WatchGuardian._internal.database.manage import ControlDb
+from WatchGuardian._internal.core.module import config_url
 
 
 async def test_db() -> None:

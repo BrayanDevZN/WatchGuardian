@@ -153,7 +153,7 @@ flowchart TD
     N --> S[Database]
 ```
 
-A camada `WatchGuardian/` é a API pública. A implementação interna permanece em `src/`, permitindo evoluir a arquitetura sem obrigar quem usa o framework a depender da estrutura interna.
+A API pública e toda a implementação distribuída ficam no pacote `WatchGuardian`. Os detalhes internos ficam em `WatchGuardian._internal`; use os imports documentados de `WatchGuardian`.
 
 ---
 
@@ -480,14 +480,14 @@ Sem projeto, crie o balanceador passando um objeto `Replicators` ou uma lista de
 
 ## Projeto gerado: `ProjectApp` e `WatchModule`
 
-O comando `watchguardian project start` copia a pasta-template `src/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`; ele é convertido para minúsculas. Sem `--name`, a pasta se chama `watchguardian`. Esse nome padrão é aplicado automaticamente; para `--name`, escolha outro nome. O template contém:
+O comando `watchguardian project start` copia a pasta-template `WatchGuardian/project/watchguardian/` para o destino. O nome da pasta copiada pode ser escolhido com `--name`; ele é convertido para minúsculas. Sem `--name`, a pasta se chama `watchguardian`. Esse nome padrão é aplicado automaticamente; para `--name`, escolha outro nome. O template contém:
 
 - `main.py`, que cria e exporta `app`;
 - `manage.py`, `module.py` e `settings.py`, que inicializam e conectam os módulos.
 
-O pacote público `WatchGuardian` é instalado como dependência do framework; ele não é duplicado dentro do template. A pasta-base `src/project/watchguardian/` também não contém `settings.json`.
+O pacote público `WatchGuardian` é instalado como dependência do framework; ele não é duplicado dentro do template. A pasta-base `WatchGuardian/project/watchguardian/` também não contém `settings.json`.
 
-O arquivo `src/project/file.py` copia o template e, em seguida, cria `settings.json` dentro da pasta gerada. Esse JSON recebe o nome, caminho, arquivo de ambiente, modo local/HTTP, nível de log e as configurações padrão. Assim, o arquivo só passa a existir no projeto do usuário depois de executar `project start`.
+O arquivo `WatchGuardian/_internal/project/file.py` copia o template e, em seguida, cria `settings.json` dentro da pasta gerada. Esse JSON recebe o nome, caminho, arquivo de ambiente, modo local/HTTP, nível de log e as configurações padrão. Assim, o arquivo só passa a existir no projeto do usuário depois de executar `project start`.
 
 Exemplo:
 
@@ -526,7 +526,7 @@ Também é possível iniciar o agregador no código, sem usar a pasta gerada:
 
 ```python
 import asyncio
-from src.project.watchguardian.manage import watch_manage
+from WatchGuardian.project.watchguardian.manage import watch_manage
 
 async def main():
     modules = await watch_manage(env_file=None)
@@ -725,7 +725,7 @@ Nota sobre os parâmetros `limit` e `limit_expires`: eles são armazenados pela 
 
 ## Projeto: `ProjectSettings`, `WatchModule` e `ProjectApp`
 
-Esses módulos pertencem ao template de projeto em `src/project/watchguardian/`; a função de cópia fica em `src/project/file.py`.
+Esses módulos pertencem ao template de projeto em `WatchGuardian/project/watchguardian/`; a função de cópia fica em `WatchGuardian/_internal/project/file.py`.
 
 ### `ProjectSettings`
 
@@ -888,13 +888,12 @@ O WatchGuardian é distribuído sob a **MIT License**. Isso permite usar, copiar
 ## Estrutura do projeto
 
 ```text
-WatchGuardian/
-├── WatchGuardian/          # API pública do framework
-│   ├── __init__.py
-│   ├── database.py
-│   └── server.py
-│
-├── src/                    # implementação interna
+WatchGuardian/                  # pacote público
+├── __init__.py
+├── balance.py
+├── database.py
+├── server.py
+├── _internal/                   # implementação e CLI do framework
 │   ├── auth/
 │   ├── cache/
 │   ├── cli/
@@ -902,23 +901,19 @@ WatchGuardian/
 │   ├── core/
 │   ├── database/
 │   ├── logs/
-│   ├── project/
-│   │   ├── file.py           # copiador do projeto
-│   │   └── watchguardian/    # template completo copiado pelo CLI
+│   ├── project/                 # copiador do template
 │   ├── server/
 │   ├── service/
 │   └── util/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── functional/
-│
-├── .github/workflows/
-├── assets/
-├── LICENSE
-├── pyproject.toml
-└── README.md
+└── project/
+    └── watchguardian/           # template gerado pelo CLI
+
+tests/
+.github/workflows/
+assets/
+LICENSE
+pyproject.toml
+README.md
 ```
 
 ---
@@ -944,7 +939,7 @@ python -m build
 
 ## Status
 
-Versão preparada para a próxima publicação: **0.2.7**.
+Versão preparada para a próxima publicação: **0.2.14**.
 
 - [x] Framework instalável via PyPI
 - [x] API pública em `WatchGuardian`

@@ -2,7 +2,7 @@
 
 import asyncio
 
-from src.service.module import ClientHttp, Settings, WatchAuth
+from WatchGuardian._internal.service.module import ClientHttp, Settings, WatchAuth
 
 
 TEST_SECRET = "watchguardian-functional-test-secret-2026"

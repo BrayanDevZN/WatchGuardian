@@ -5,8 +5,8 @@ import asyncio
 from fastapi import Request
 from fastapi.responses import Response
 
-from src.core.module import Settings
-from src.server.midlleware import Midlleware
+from WatchGuardian._internal.core.module import Settings
+from WatchGuardian._internal.server.midlleware import Midlleware
 
 
 class FakeCache:

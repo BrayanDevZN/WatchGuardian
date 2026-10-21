@@ -1,1 +1,1 @@
-from src.service.module import WatchDb, CacheManage
+from WatchGuardian._internal.service.module import WatchDb, CacheManage

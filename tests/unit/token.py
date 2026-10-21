@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime, timezone
 import os
 
-from src.service.module import Settings, WatchAuth
+from WatchGuardian._internal.service.module import Settings, WatchAuth
 
 
 async def test_token() -> None:

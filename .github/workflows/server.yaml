@@ -53,7 +53,7 @@ jobs:
           import contextlib
           import sys
 
-          from src.service.module import Settings, WatchAuth
+          from WatchGuardian._internal.service.module import Settings, WatchAuth
 
           settings = Settings()
           settings.secrets["secret"] = "watchguardian-functional-test-secret-2026"

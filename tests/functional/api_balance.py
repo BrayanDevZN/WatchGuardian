@@ -1,6 +1,6 @@
 """Configuração funcional do balanceador para o CI."""
 
-from src.service.module import CacheManage, Replicator, Settings, WatchBalance
+from WatchGuardian._internal.service.module import CacheManage, Replicator, Settings, WatchBalance
 
 
 settings = Settings()
