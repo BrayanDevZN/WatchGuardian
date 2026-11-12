@@ -1,0 +1,48 @@
+{
+    "name": "tests",
+    "path": ".",
+    "type": "dir",
+    "left": {
+        "name": "estoque",
+        "path": "./estoque",
+        "type": "dir",
+        "left": {
+            "name": "exceptions.py",
+            "path": "./estoque/exceptions.py",
+            "type": "file",
+            "status": "visited",
+            "left": null,
+            "right": {
+                "name": "main.py",
+                "path": "./estoque/main.py",
+                "type": "file",
+                "status": "visited",
+                "left": null,
+                "right": {
+                    "name": "models.py",
+                    "path": "./estoque/models.py",
+                    "type": "file",
+                    "status": "visited",
+                    "left": null,
+                    "right": {
+                        "name": "servico.py",
+                        "path": "./estoque/servico.py",
+                        "type": "file",
+                        "status": "visited",
+                        "left": null,
+                        "right": {
+                            "name": "utils.py",
+                            "path": "./estoque/utils.py",
+                            "type": "file",
+                            "status": "visited",
+                            "left": null,
+                            "right": null
+                        }
+                    }
+                }
+            }
+        },
+        "right": null
+    },
+    "right": null
+}

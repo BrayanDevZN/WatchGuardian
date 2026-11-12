@@ -1,0 +1,7 @@
+{
+    "model": {
+        "name": "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "temperature": 0.2
+    },
+    "env_file": "/home/Brayan/CodeShift/.env"
+}
